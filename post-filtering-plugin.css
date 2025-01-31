@@ -1,0 +1,322 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+
+
+.pfp-tabs {
+    margin: 20px 0;
+}
+
+.tab-links {
+    list-style: none;
+    padding: 0;
+    display: flex;
+}
+
+.tab-links li {
+    margin-right: 10px;
+}
+
+.tab-links a {
+    text-decoration: none;
+    padding: 10px 15px;
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    color: #333;
+    
+}
+
+
+
+.tab-links .active a {
+    background: #fff;
+    border-bottom: 1px solid #fff;
+    font-weight: bold;
+}
+
+.tab-content {
+    display: none;
+    border: 1px solid #ddd;
+    border-top: none;
+    padding: 15px;
+}
+
+.tab-content.active {
+    display: block;
+}
+.seasonal-receipes {
+    max-width: 800px; /* Set a max width for the container */
+    margin: 0 auto; /* Center the container */
+    padding: 20px; /* Add some padding */
+    background: #f9f9f9; /* Light background color */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Soft shadow */
+}
+
+h2 {
+    text-align: center; /* Center the heading */
+    color: #2c3e50; /* Darker text color */
+    margin-bottom: 20px; /* Space below the heading */
+}
+
+.tabs {
+    margin-bottom: 20px; /* Space below the tabs */
+}
+
+.tab-list {
+    list-style-type: none; /* Remove list styles */
+    padding: 0; /* Remove default padding */
+    display: flex; /* Horizontal layout */
+    justify-content: center; /* Center the tabs */
+}
+
+.tab-item {
+    margin: 0 10px; /* Space between tabs */
+    cursor: pointer; /* Pointer cursor for interactivity */
+    padding: 10px 15px; /* Space inside each tab */
+    border: 1px solid transparent; /* Border for inactive tabs */
+    border-radius: 5px; /* Rounded corners */
+   
+}
+
+.filter-options {
+    display: flex; /* Flexbox for layout */
+    justify-content: space-between; /* Space items evenly */
+    align-items: center; /* Center items vertically */
+    margin-top: 20px; /* Space above filter options */
+    width:90%;
+}
+
+.filter-dropdown {
+    flex: 1; /* Grow the dropdowns equally */
+    margin: 0 10px; /* Space between dropdowns */
+    width:60%;
+}
+
+.filter-dropdown label {
+    display: block; /* Block layout for label */
+    margin-bottom: 5px; /* Space below label */
+    font-weight: bold; /* Bold label text */
+    color: #2c3e50; /* Dark label color */
+}
+
+.filter-dropdown select {
+    width: 100%; /* Full width for dropdown */
+    padding: 10px; /* Space inside dropdown */
+    border: 1px solid #ccc; /* Light border */
+    border-radius: 5px; /* Rounded corners */
+    font-size: 16px; /* Font size */
+    color: #333; /* Dark text color */
+    background-color: #fff; /* White background */
+    transition: border-color 0.3s; /* Smooth border transition */
+}
+
+.filter-dropdown select:focus {
+    border-color: #2c3e50; /* Dark border on focus */
+    outline: none; /* Remove default outline */
+}
+.post-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+.post-item {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+    width: calc(33.333% - 20px); /* Adjust for 3 columns */
+}
+.post-item h3 {
+    margin: 0 0 10px;
+}
+.post-item img {
+    width: 100%;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+.pp-container{
+    background-color: #FFF;
+padding:40px;
+
+}
+
+.filter-container{
+    background-color: #FFF;
+    padding: 30px;
+    box-shadow: 0px 4px 30px 0px #0000000F;
+    border: 1px solid #10647F1F;
+    border-radius: 12px;
+
+}
+
+
+select#user-state{
+    color:#08303D59;
+}
+h3#selected-category-heading{
+    color:  #10647F;
+  font-size: 62px;
+font-weight: 500;
+line-height: 74.4px;
+text-align: center;
+font-family: 'archeron-pro' !important;
+}
+
+li.tab-item{
+    width:100%;
+    text-align: center;
+}
+
+/* Basic styles for tabs */
+.tabs {
+    margin-bottom: 20px;
+}
+.tab-list {
+    list-style-type: none;
+    padding: 0;
+    display: flex;
+}
+.tab-item {
+    margin-right: 15px;
+    cursor: pointer;
+    padding: 10px 15px;
+    border-bottom: 2px solid transparent; /* Set transparent border */
+    color: #08303D59;
+    font-family: 'archeron-pro' !important;
+    font-size: 14px;
+}
+.tab-item.active {
+    border-bottom: 1px solid #0C2E3A; /* Underline color for active tab */
+    border-radius:0px ;
+    color: #0C2E3A;
+    font-family: 'archeron-pro' !important;
+    font-size: 14px;
+}
+select#available-posts,select#user-state ,select#month {
+    font-family: 'archeron-pro' !important;
+    border: none;
+    font-size:14px;
+    font-weight: 400;
+    line-height: 16.8px;
+    color:#08303D59;
+}
+
+.vertical-separator {
+    width: 1px; /* Width of the separator */
+    background-color: #ccc; /* Color of the separator */
+    top:10px; 
+    height: 60px; /* Height of the separator */
+    margin: 15px 15px; /* Margin to space out the separator */
+    display: inline-block; /* Makes it behave like an inline element */
+}
+
+.post-grid {
+    display: grid;
+    /* grid-template-columns: repeat(4, 1fr); /* 4 columns */
+    gap: 20px; /* Space between posts */
+}
+
+.post-item {
+width:280px;
+height: 100%; /* Make sure the items take full height */
+padding: 10px;
+gap: 15px;
+border-radius: 12px 12px 12px 12px;
+opacity: 0px;
+box-shadow: 0px 4px 20px 0px #0000000F;
+border: 0px;
+
+
+}
+
+
+select#available-posts{
+    width:100%;
+    color:#08303D59;
+}
+.woocommerce-js select:focus{
+    padding:0px !important;
+}
+.woocommerce-js select{
+    padding-left: 0px !important;
+}
+
+@media only screen and (max-width: 768px) {
+    .filter-options {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .vertical-separator {
+        display: none; /* Hide vertical separator on mobile */
+    }
+    div#dynamic-filters{
+        display: flex;
+        flex-direction: column !important;
+    }
+    .filter-container{
+        padding: 0px;
+    }
+    .post-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* 4 columns */
+        gap: 10px; /* Space between posts */
+    }
+}
+
+@media only screen and (max-width: 425px) {
+    .post-grid {
+        grid-template-columns: 1fr; /* 1 column per row */
+    }
+}
+
+@media only screen and (min-width: 768px) and (max-width: 1024px) 
+   {
+
+    div#dynamic-filters{
+        width:100% ;
+    }
+   }
+
+        /* Basic styles for tabs */
+        .tabs {
+            margin-bottom: 20px;
+        }
+        .tab-list {
+            list-style-type: none;
+            padding: 0;
+            display: flex;
+    
+        }
+        .tab-item {
+            margin-right: 15px;
+            cursor: pointer;
+            padding: 10px 15px;
+            border-radius: 5px;
+        }
+        .tab-item.active {
+            border: 0px;
+    border-bottom: 1px solid #0C2E3A;
+    color: #08303D;
+    font-family: 'archeron-pro' !important;
+        }
+        
+        /* Style for filter options to display in a single line */
+        .filter-options {
+            display: flex;
+            align-items: center; /* Center items vertically */
+            margin-top: 20px;   /* Optional: space above the filters */
+        }
+        .filter-dropdown {
+            margin-right: 15px; /* Space between dropdowns */
+        }
+        @media only screen and (min-width: 769px) {
+        div#dynamic-filters{
+            display:flex;
+            flex-direction:row;
+            padding:0px;
+            width:50%
+        }
+    }
+        
