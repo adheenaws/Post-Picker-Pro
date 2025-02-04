@@ -19,7 +19,8 @@ function pfp_enqueue_scripts() {
 add_action('wp_enqueue_scripts', 'pfp_enqueue_scripts');
 
 // Add a settings page for the plugin
-function pfp_add_settings_page() {
+function pfp_add_settings_pages() {
+    // Post Picker Settings Page
     add_menu_page(
         'Post Picker Settings', // Page title
         'Post Picker',          // Menu title
@@ -29,8 +30,17 @@ function pfp_add_settings_page() {
         'dashicons-filter',     // Icon
         100                     // Position
     );
+
+    // License Settings Page (added under Settings menu)
+    add_options_page(
+        'My Plugin License Settings',  // Page title
+        'My Plugin Settings',          // Menu title
+        'manage_options',              // Capability required to access the page
+        'my-plugin-license',           // Slug for the page
+        'my_plugin_license_settings_page' // Callback function that displays the page content
+    );
 }
-add_action('admin_menu', 'pfp_add_settings_page');
+add_action('admin_menu', 'pfp_add_settings_pages');
 
 
 // Render the settings page with tabs
@@ -39,42 +49,47 @@ function pfp_render_settings_page() {
     <div class="wrap">
         <h1>Post Picker Settings</h1>
 
-        <!-- Tab Navigation -->
-        <h2 class="nav-tab-wrapper">
-            <a href="#tab-general" class="nav-tab nav-tab-active">General Settings</a>
-            <a href="#tab-font-sizes" class="nav-tab">Font Sizes</a>
-            <a href="#tab-colors" class="nav-tab">Colors</a>
-            <a href="#tab-layout" class="nav-tab">Layout</a>
-        </h2>
+        
 
-        <!-- Tab Content -->
-        <form method="post" action="options.php">
-            <?php
-            settings_fields('pfp_settings_group'); // Settings group
+        <div class="pfp-settings-container">
+            <!-- Left Side: Settings Form -->
+            <div class="pfp-settings-form">
+                <h2 class="nav-tab-wrapper">
+                    <a href="#tab-general" class="nav-tab nav-tab-active">General Settings</a>
+                    <a href="#tab-font-sizes" class="nav-tab">Font Sizes</a>
+                    <a href="#tab-colors" class="nav-tab">Colors</a>
+                    <a href="#tab-layout" class="nav-tab">Layout</a>
+                </h2>
 
-            // General Settings Tab
-            echo '<div id="tab-general" class="tab-content active">';
-            do_settings_sections('pfp-settings-general'); // General settings section
-            echo '</div>';
+                <form method="post" action="options.php">
+                    <?php
+                    settings_fields('pfp_settings_group'); // Settings group
 
-            // Font Sizes Tab
-            echo '<div id="tab-font-sizes" class="tab-content">';
-            do_settings_sections('pfp-settings-font-sizes'); // Font sizes section
-            echo '</div>';
+                    // General Settings Tab
+                    echo '<div id="tab-general" class="tab-content active">';
+                    do_settings_sections('pfp-settings-general'); // General settings section
+                    echo '</div>';
 
-            // Colors Tab
-            echo '<div id="tab-colors" class="tab-content">';
-            do_settings_sections('pfp-settings-colors'); // Colors section
-            echo '</div>';
+                    // Font Sizes Tab
+                    echo '<div id="tab-font-sizes" class="tab-content">';
+                    do_settings_sections('pfp-settings-font-sizes'); // Font sizes section
+                    echo '</div>';
 
-            // Layout Tab
-            echo '<div id="tab-layout" class="tab-content">';
-            do_settings_sections('pfp-settings-layout'); // Layout section
-            echo '</div>';
+                    // Colors Tab
+                    echo '<div id="tab-colors" class="tab-content">';
+                    do_settings_sections('pfp-settings-colors'); // Colors section
+                    echo '</div>';
 
-            submit_button();
-            ?>
-        </form>
+                    // Layout Tab
+                    echo '<div id="tab-layout" class="tab-content">';
+                    do_settings_sections('pfp-settings-layout'); // Layout section
+                    echo '</div>';
+
+                    submit_button();
+                    ?>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Tab Switching JavaScript -->
@@ -92,12 +107,312 @@ function pfp_render_settings_page() {
             $('.nav-tab-wrapper a:first').click();
         });
     </script>
+
+ <!-- Enhanced CSS Styling -->
+<style>
+    .pfp-settings-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 30px;
+    }
+
+    .pfp-settings-form {
+        flex: 1;
+        max-width: 100%;
+        min-width: 300px;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .pfp-settings-form h1 {
+        font-size: 28px; /* Larger font size for the main title */
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .pfp-settings-form h2 {
+        font-size: 24px; /* Font size for section headings */
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .pfp-settings-form h3 {
+        margin-top: 20px;
+        font-size: 20px; /* Adjust font size for subheadings */
+        color: #444;
+    }
+
+    .pfp-settings-form h4 {
+        font-size: 18px; /* Font size for smaller subheadings */
+        color: #333;
+    }
+
+    .nav-tab-wrapper {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 20px;
+    }
+
+    .nav-tab {
+        padding: 10px 20px;
+        background-color: #f1f1f1;
+        color: #555;
+        text-decoration: none;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        margin-right: 10px;
+        font-weight: bold;
+        font-size: 16px; /* Font size for tab text */
+    }
+
+    .nav-tab-active {
+        background-color: #0073aa;
+        color: white;
+        border-color: #0073aa;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .pfp-settings-form .section {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+
+    .pfp-settings-form .section h4 {
+        margin-top: 0;
+        font-size: 16px; /* Font size for section titles */
+        color: #333;
+    }
+
+    .pfp-settings-form .section input[type="text"], 
+    .pfp-settings-form .section input[type="number"], 
+    .pfp-settings-form .section select {
+        width: 100%;
+        padding: 8px;
+        margin-top: 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        font-size: 14px; /* Font size for input fields */
+    }
+
+    .pfp-settings-form .section input[type="submit"],
+    .pfp-settings-form .section button {
+        padding: 10px 20px;
+        background-color: #0073aa;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px; /* Font size for buttons */
+    }
+
+    .pfp-settings-form .section input[type="submit"]:hover,
+    .pfp-settings-form .section button:hover {
+        background-color: #005f8e;
+    }
+
+    /* Font Sizes Tab Specific */
+    #tab-font-sizes .section {
+        font-size: 18px; /* Default font size for the font sizes section */
+    }
+
+    #tab-font-sizes .section input[type="text"], 
+    #tab-font-sizes .section input[type="number"], 
+    #tab-font-sizes .section select {
+        font-size: 16px; /* Adjust font size of inputs in the Font Sizes section */
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .pfp-settings-container {
+            flex-direction: column;
+        }
+
+        .pfp-settings-form {
+            width: 100%;
+        }
+
+        .nav-tab-wrapper {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .nav-tab {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    }
+</style>
+
     <?php
 }
 
 
+
 // Register plugin settings
 function pfp_register_settings() {
+  
+    // Register the predefined key setting
+    register_setting('pfp_settings_group', 'pfp_predefined_key', 'sanitize_text_field');
+
+    // Add a new section for the predefined key
+    add_settings_section(
+        'pfp_predefined_key_section',
+        'Predefined Key',
+        'pfp_predefined_key_section_text',
+        'pfp-settings-general'
+    );
+
+    // Add the predefined key input field
+    add_settings_field(
+        'pfp_predefined_key',
+        'Predefined Key',
+        'pfp_predefined_key_input',
+        'pfp-settings-general',
+        'pfp_predefined_key_section'
+    );
+
+   
+    register_setting('pfp_settings_group', 'pfp_category_title_font_size', 'sanitize_text_field');
+    register_setting('pfp_settings_group', 'pfp_tablet_category_title_font_size', 'sanitize_text_field');
+    register_setting('pfp_settings_group', 'pfp_mobile_category_title_font_size', 'sanitize_text_field');
+
+
+    register_setting('pfp_settings_group', 'pfp_tab_font_size', 'sanitize_text_field');
+    register_setting('pfp_settings_group', 'pfp_tablet_tab_font_size', 'sanitize_text_field');
+    register_setting('pfp_settings_group', 'pfp_mobile_tab_font_size', 'sanitize_text_field');
+
+    register_setting('pfp_settings_group', 'pfp_post_title_font_size', 'sanitize_text_field');
+    register_setting('pfp_settings_group', 'pfp_tablet_post_title_font_size', 'sanitize_text_field');
+    register_setting('pfp_settings_group', 'pfp_mobile_post_title_font_size', 'sanitize_text_field');
+
+    register_setting('pfp_settings_group', 'pfp_post_excerpt_font_size', 'sanitize_text_field');
+    register_setting('pfp_settings_group', 'pfp_tablet_post_excerpt_font_size', 'sanitize_text_field');
+    register_setting('pfp_settings_group', 'pfp_mobile_post_excerpt_font_size', 'sanitize_text_field');
+
+    // Font Sizes Section
+    add_settings_section(
+        'pfp_font_sizes_section',
+        'Font Sizes',
+        'pfp_font_sizes_section_text',
+        'pfp-settings-font-sizes'
+    );
+
+    add_settings_section(
+        'pfp_category_title_font_section',
+        'Category Title Font',
+        'pfp_category_title_font_section_text', // Callback function
+        'pfp-settings-font-sizes'
+    );
+    
+    // // Heading Font Size Fields
+    add_settings_field(
+        'pfp_category_title_font_size',
+        'Category Title Font Size (px)',
+        'pfp_category_title_font_size_input',
+        'pfp-settings-font-sizes',
+        'pfp_category_title_font_section'
+    );
+    add_settings_field(
+        'pfp_tablet_category_title_font_size',
+        'Category Title Tablet Font Size (px)',
+        'pfp_tablet_category_title_font_size_input',
+        'pfp-settings-font-sizes',
+        'pfp_category_title_font_section'
+    );
+    add_settings_field(
+        'pfp_mobile_category_title_font_size',
+        'Category Title Mobile Font Size (px)',
+        'pfp_mobile_category_title_font_size_input',
+        'pfp-settings-font-sizes',
+        'pfp_category_title_font_section'
+    );
+    
+
+    // Tab Title Font Section
+    add_settings_section(
+        'pfp_tab_title_font_section',  // Section ID
+        'Tab Title Font',              // Section title
+        'pfp_tab_title_font_section_text', // Callback function
+        'pfp-settings-font-sizes'      // Page where the section will appear
+    );
+
+    // Tab Title Font Size Fields
+    add_settings_field(
+        'pfp_tab_font_size', 
+        'Tab Title Font Size (px)', 
+        'pfp_tab_font_size_input', 
+        'pfp-settings-font-sizes', 
+        'pfp_tab_title_font_section'
+    );
+    add_settings_field(
+        'pfp_tablet_tab_font_size', 
+        'Tab Title Tablet Font Size (px)', 
+        'pfp_tablet_tab_font_size_input', 
+        'pfp-settings-font-sizes', 
+        'pfp_tab_title_font_section'
+    );
+    add_settings_field(
+        'pfp_mobile_tab_font_size', 
+        'Tab Title Mobile Font Size (px)', 
+        'pfp_mobile_tab_font_size_input', 
+        'pfp-settings-font-sizes', 
+        'pfp_tab_title_font_section'
+    );
+
+    // Post Title Font Section
+    add_settings_section(
+        'pfp_post_title_font_section',
+        'Post Title Font',
+        'pfp_post_title_font_section_text', // Callback function
+        'pfp-settings-font-sizes'
+    );
+
+    // Post Title Font Size Fields
+    add_settings_field('pfp_post_title_font_size', 'Post Title Font Size (px)', 'pfp_post_title_font_size_input', 'pfp-settings-font-sizes', 'pfp_post_title_font_section');
+    add_settings_field('pfp_tablet_post_title_font_size', 'Post Title Tablet Font Size (px)', 'pfp_tablet_post_title_font_size_input', 'pfp-settings-font-sizes', 'pfp_post_title_font_section');
+    add_settings_field('pfp_mobile_post_title_font_size', 'Post Title Mobile Font Size (px)', 'pfp_mobile_post_title_font_size_input', 'pfp-settings-font-sizes', 'pfp_post_title_font_section');
+
+    // Post Excerpt Font Section
+    add_settings_section(
+        'pfp_post_excerpt_font_section',
+        'Post Excerpt Font',
+        'pfp_post_excerpt_font_section_text', // Callback function
+        'pfp-settings-font-sizes'
+    );
+
+    // Post Excerpt Font Size Fields
+    add_settings_field('pfp_post_excerpt_font_size', 'Post Excerpt Font Size (px)', 'pfp_post_excerpt_font_size_input', 'pfp-settings-font-sizes', 'pfp_post_excerpt_font_section');
+    add_settings_field('pfp_tablet_post_excerpt_font_size', 'Post Excerpt Tablet Font Size (px)', 'pfp_tablet_post_excerpt_font_size_input', 'pfp-settings-font-sizes', 'pfp_post_excerpt_font_section');
+    add_settings_field('pfp_mobile_post_excerpt_font_size', 'Post Excerpt Mobile Font Size (px)', 'pfp_mobile_post_excerpt_font_size_input', 'pfp-settings-font-sizes', 'pfp_post_excerpt_font_section');
+
+    // Font Family Settings
+    register_setting('pfp_settings_group', 'pfp_heading_font_family', 'sanitize_text_field');
+    register_setting('pfp_settings_group', 'pfp_body_font_family', 'sanitize_text_field');
+
+    add_settings_section(
+        'pfp_font_family_section',
+        'Font Family',
+        'pfp_font_family_section_text',
+        'pfp-settings-font-families'
+    );
+
+    add_settings_field('pfp_heading_font_family', 'Heading Font Family', 'pfp_heading_font_family_input', 'pfp-settings-font-families', 'pfp_font_family_section');
+    add_settings_field('pfp_body_font_family', 'Body Font Family', 'pfp_body_font_family_input', 'pfp-settings-font-families', 'pfp_font_family_section');
+
     // General Settings
     register_setting('pfp_settings_group', 'pfp_taxonomy_name', 'sanitize_text_field');
     register_setting('pfp_settings_group', 'pfp_tag_label', 'sanitize_text_field');
@@ -110,151 +425,22 @@ function pfp_register_settings() {
         'pfp-settings-general'
     );
 
-    add_settings_field(
-        'pfp_taxonomy_name',
-        'Taxonomy Name',
-        'pfp_taxonomy_name_input',
-        'pfp-settings-general',
-        'pfp_general_section'
-    );
+    add_settings_field('pfp_taxonomy_name', 'Taxonomy Name', 'pfp_taxonomy_name_input', 'pfp-settings-general', 'pfp_general_section');
+    add_settings_field('pfp_tag_label', 'Tag Label', 'pfp_tag_label_input', 'pfp-settings-general', 'pfp_general_section');
+    add_settings_field('pfp_produce_type_label', 'Produce Type Label', 'pfp_produce_type_label_input', 'pfp-settings-general', 'pfp_general_section');
 
-    add_settings_field(
-        'pfp_tag_label',
-        'Tag Label',
-        'pfp_tag_label_input',
-        'pfp-settings-general',
-        'pfp_general_section'
-    );
-
-    add_settings_field(
-        'pfp_produce_type_label',
-        'Produce Type Label',
-        'pfp_produce_type_label_input',
-        'pfp-settings-general',
-        'pfp_general_section'
-    );
-
-    // Font Sizes
-    register_setting('pfp_settings_group', 'pfp_heading_font_size', 'sanitize_text_field');
-    register_setting('pfp_settings_group', 'pfp_tablet_heading_font_size', 'sanitize_text_field');
-    register_setting('pfp_settings_group', 'pfp_mobile_heading_font_size', 'sanitize_text_field');
-    register_setting('pfp_settings_group', 'pfp_tab_font_size', 'sanitize_text_field');
-    register_setting('pfp_settings_group', 'pfp_tablet_tab_font_size', 'sanitize_text_field'); // Tablet Tab Title Font Size
-    register_setting('pfp_settings_group', 'pfp_mobile_tab_font_size', 'sanitize_text_field'); // Mobile Tab Title Font Size
-    register_setting('pfp_settings_group', 'pfp_post_title_font_size', 'sanitize_text_field');
-    register_setting('pfp_settings_group', 'pfp_tablet_post_title_font_size', 'sanitize_text_field'); // Tablet Post Title Font Size
-    register_setting('pfp_settings_group', 'pfp_mobile_post_title_font_size', 'sanitize_text_field'); // Mobile Post Title Font Size
-    register_setting('pfp_settings_group', 'pfp_post_excerpt_font_size', 'sanitize_text_field');
-    register_setting('pfp_settings_group', 'pfp_tablet_post_excerpt_font_size', 'sanitize_text_field'); // Tablet Post Excerpt Font Size
-    register_setting('pfp_settings_group', 'pfp_mobile_post_excerpt_font_size', 'sanitize_text_field'); // Mobile Post Excerpt Font Size
-
-    add_settings_section(
-        'pfp_font_sizes_section',
-        'Font Sizes',
-        'pfp_font_sizes_section_text',
-        'pfp-settings-font-sizes'
-    );
-
-    add_settings_field(
-        'pfp_heading_font_size',
-        'Heading Font Size (px)',
-        'pfp_heading_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_tablet_heading_font_size',
-        'Tablet Heading Font Size (px)',
-        'pfp_tablet_heading_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_mobile_heading_font_size',
-        'Mobile Heading Font Size (px)',
-        'pfp_mobile_heading_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_tab_font_size',
-        'Tab Title Font Size (px)',
-        'pfp_tab_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_tablet_tab_font_size',
-        'Tab Title Tablet Font Size (px)',
-        'pfp_tablet_tab_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_mobile_tab_font_size',
-        'Tab Title Mobile Font Size (px)',
-        'pfp_mobile_tab_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_post_title_font_size',
-        'Post Title Font Size (px)',
-        'pfp_post_title_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_tablet_post_title_font_size',
-        'Post Title Tablet Font Size (px)',
-        'pfp_tablet_post_title_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_mobile_post_title_font_size',
-        'Post Title Mobile Font Size (px)',
-        'pfp_mobile_post_title_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_post_excerpt_font_size',
-        'Post Excerpt Font Size (px)',
-        'pfp_post_excerpt_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_tablet_post_excerpt_font_size',
-        'Post Excerpt Tablet Font Size (px)',
-        'pfp_tablet_post_excerpt_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    add_settings_field(
-        'pfp_mobile_post_excerpt_font_size',
-        'Post Excerpt Mobile Font Size (px)',
-        'pfp_mobile_post_excerpt_font_size_input',
-        'pfp-settings-font-sizes',
-        'pfp_font_sizes_section'
-    );
-
-    // Colors
+    // Colors Section
     register_setting('pfp_settings_group', 'pfp_pp_container_bg_color', 'sanitize_hex_color');
     register_setting('pfp_settings_group', 'pfp_filter_container_bg_color', 'sanitize_hex_color');
     register_setting('pfp_settings_group', 'pfp_post_item_bg_color', 'sanitize_hex_color');
+    register_setting('pfp_settings_group', 'pfp_pagination_bg_color', 'sanitize_hex_color');
+    register_setting('pfp_settings_group', 'pfp_pagination_active_bg_color', 'sanitize_hex_color');
+    register_setting('pfp_settings_group', 'pfp_selected_category_heading_color', 'sanitize_hex_color');
+    register_setting('pfp_settings_group', 'pfp_tab_item_color', 'sanitize_hex_color');
+    register_setting('pfp_settings_group', 'pfp_post_item_heading_color', 'sanitize_hex_color');
+    register_setting('pfp_settings_group', 'pfp_post_item_text_color', 'sanitize_hex_color');
+    register_setting('pfp_settings_group', 'pfp_subheading_font_color', 'sanitize_hex_color');
+    add_settings_field('pfp_subheading_font_color', 'Subheading Font Color', 'pfp_subheading_font_color_input', 'pfp-settings-colors', 'pfp_colors_section'); // New field for subheading font color
 
     add_settings_section(
         'pfp_colors_section',
@@ -263,85 +449,205 @@ function pfp_register_settings() {
         'pfp-settings-colors'
     );
 
-    add_settings_field(
-        'pfp_pp_container_bg_color',
-        'PP Container Background Color',
-        'pfp_pp_container_bg_color_input',
-        'pfp-settings-colors',
-        'pfp_colors_section'
-    );
+    add_settings_field('pfp_pp_container_bg_color', 'PP Container Background Color', 'pfp_pp_container_bg_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+    add_settings_field('pfp_filter_container_bg_color', 'Filter Container Background Color', 'pfp_filter_container_bg_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+    add_settings_field('pfp_post_item_bg_color', 'Post Item Background Color', 'pfp_post_item_bg_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+    add_settings_field('pfp_pagination_bg_color', 'Pagination Background Color', 'pfp_pagination_bg_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+    add_settings_field('pfp_pagination_active_bg_color', 'Active Pagination Background Color', 'pfp_pagination_active_bg_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+    add_settings_field('pfp_selected_category_heading_color', 'Selected Category Heading Color', 'pfp_selected_category_heading_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+    add_settings_field('pfp_tab_item_color', 'Tab Item Color', 'pfp_tab_item_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+    add_settings_field('pfp_post_item_heading_color', 'Post Item Heading Color', 'pfp_post_item_heading_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+    add_settings_field('pfp_post_item_text_color', 'Post Item Text Color', 'pfp_post_item_text_color_input', 'pfp-settings-colors', 'pfp_colors_section');
 
-    add_settings_field(
-        'pfp_filter_container_bg_color',
-        'Filter Container Background Color',
-        'pfp_filter_container_bg_color_input',
-        'pfp-settings-colors',
-        'pfp_colors_section'
-    );
+ // Layout Register Settings
+register_setting('pfp_settings_group', 'pfp_posts_per_row', 'intval');
+register_setting('pfp_settings_group', 'pfp_tablet_posts_per_row', 'intval'); // New: Tablet posts per row
+register_setting('pfp_settings_group', 'pfp_mobile_posts_per_row', 'intval'); // New: Mobile posts per row
+register_setting('pfp_settings_group', 'pfp_posts_per_page', 'intval');
+register_setting('pfp_settings_group', 'pfp_post_item_img_height', 'intval');
+// Add new settings for tablet and mobile image heights
+register_setting('pfp_settings_group', 'pfp_tablet_image_height', 'intval'); // Tablet image height
+register_setting('pfp_settings_group', 'pfp_mobile_image_height', 'intval'); // Mobile image height
 
-    add_settings_field(
-        'pfp_post_item_bg_color',
-        'Post Item Background Color',
-        'pfp_post_item_bg_color_input',
-        'pfp-settings-colors',
-        'pfp_colors_section'
-    );
+// Add Layout Section
+add_settings_section(
+    'pfp_layout_section',
+    'Layout',
+    'pfp_layout_section_text',
+    'pfp-settings-layout'
+);
 
-    // Layout
-    register_setting('pfp_settings_group', 'pfp_posts_per_row', 'intval');
-    register_setting('pfp_settings_group', 'pfp_tablet_posts_per_row', 'intval'); // New: Tablet posts per row
-    register_setting('pfp_settings_group', 'pfp_mobile_posts_per_row', 'intval'); // New: Mobile posts per row
-    register_setting('pfp_settings_group', 'pfp_posts_per_page', 'intval');
-    register_setting('pfp_settings_group', 'pfp_post_item_img_height', 'intval');
+// Add Post Row Section
+add_settings_section(
+    'pfp_post_row_section',
+    'Post Row', // New section heading
+    'pfp_post_row_section_text',
+    'pfp-settings-layout'
+);
 
-    add_settings_section(
-        'pfp_layout_section',
-        'Layout',
-        'pfp_layout_section_text',
-        'pfp-settings-layout'
-    );
+// Add fields to Post Row Section
+add_settings_field(
+    'pfp_posts_per_row',
+    'Posts Per Row',
+    'pfp_posts_per_row_input',
+    'pfp-settings-layout',
+    'pfp_post_row_section' // Assign to Post Row section
+);
 
-    add_settings_field(
-        'pfp_posts_per_row',
-        'Posts Per Row',
-        'pfp_posts_per_row_input',
-        'pfp-settings-layout',
-        'pfp_layout_section'
-    );
-    // Add new fields to the Layout section
-    add_settings_field(
-        'pfp_tablet_posts_per_row',
-        'Tablet Posts Per Row',
-        'pfp_tablet_posts_per_row_input',
-        'pfp-settings-layout',
-        'pfp_layout_section'
-    );
+add_settings_field(
+    'pfp_tablet_posts_per_row',
+    'Tablet Posts Per Row',
+    'pfp_tablet_posts_per_row_input',
+    'pfp-settings-layout',
+    'pfp_post_row_section' // Assign to Post Row section
+);
 
-    add_settings_field(
-        'pfp_mobile_posts_per_row',
-        'Mobile Posts Per Row',
-        'pfp_mobile_posts_per_row_input',
-        'pfp-settings-layout',
-        'pfp_layout_section'
-    );
+add_settings_field(
+    'pfp_mobile_posts_per_row',
+    'Mobile Posts Per Row',
+    'pfp_mobile_posts_per_row_input',
+    'pfp-settings-layout',
+    'pfp_post_row_section' // Assign to Post Row section
+);
 
-    add_settings_field(
-        'pfp_posts_per_page',
-        'Posts Per Page',
-        'pfp_posts_per_page_input',
-        'pfp-settings-layout',
-        'pfp_layout_section'
-    );
+// Add fields to Layout Section
+add_settings_field(
+    'pfp_posts_per_page',
+    'Posts Per Page',
+    'pfp_posts_per_page_input',
+    'pfp-settings-layout',
+    'pfp_layout_section'
+);
 
-    add_settings_field(
-        'pfp_post_item_img_height',
-        'Post Item Image Height (px)',
-        'pfp_post_item_img_height_input',
-        'pfp-settings-layout',
-        'pfp_layout_section'
-    );
+add_settings_field(
+    'pfp_post_item_img_height',
+    'Post Item Image Height (px)',
+    'pfp_post_item_img_height_input',
+    'pfp-settings-layout',
+    'pfp_layout_section'
+);
+
+// Add fields for tablet and mobile image heights to Layout section
+add_settings_field(
+    'pfp_tablet_image_height',
+    'Tablet Image Height (px)',
+    'pfp_tablet_image_height_input',
+    'pfp-settings-layout',
+    'pfp_layout_section'
+);
+
+add_settings_field(
+    'pfp_mobile_image_height',
+    'Mobile Image Height (px)',
+    'pfp_mobile_image_height_input',
+    'pfp-settings-layout',
+    'pfp_layout_section'
+);
 }
+
+
 add_action('admin_init', 'pfp_register_settings');
+
+function pfp_subheading_font_color_input() {
+    $subheading_color = get_option('pfp_subheading_font_color', '#000000'); // Default color is black
+    echo '<input type="text" name="pfp_subheading_font_color" value="' . esc_attr($subheading_color) . '" class="my-color-field" data-default-color="#000000" />';
+}
+
+
+// Callback function for the predefined key section text
+function pfp_predefined_key_section_text() {
+    echo '<p>Enter the predefined key to enable custom fields.</p>';
+}
+
+// Callback function for the predefined key input field
+function pfp_predefined_key_input() {
+    $predefined_key = get_option('pfp_predefined_key', '');
+    echo '<input id="pfp_predefined_key" name="pfp_predefined_key" type="text" value="' . esc_attr($predefined_key) . '" />';
+}
+
+function pfp_category_title_font_section_text() {
+    echo '<p>Set the font size for the selected category title across different screen sizes.</p>';
+}
+function pfp_category_title_font_size_input() {
+    $value = get_option('pfp_category_title_font_size', '');
+    echo '<input type="text" name="pfp_category_title_font_size" value="' . esc_attr($value) . '" />';
+}
+
+function pfp_tablet_category_title_font_size_input() {
+    $value = get_option('pfp_tablet_category_title_font_size', '');
+    echo '<input type="text" name="pfp_tablet_category_title_font_size" value="' . esc_attr($value) . '" />';
+}
+
+function pfp_mobile_category_title_font_size_input() {
+    $value = get_option('pfp_mobile_category_title_font_size', '');
+    echo '<input type="text" name="pfp_mobile_category_title_font_size" value="' . esc_attr($value) . '" />';
+}
+
+
+
+function pfp_post_row_section_text() {
+    echo '<p>Configure the number of posts displayed per row for different devices (desktop, tablet, mobile).</p>';
+}
+
+
+// Callback function for the Tab Title Font section
+function pfp_tab_title_font_section_text() {
+    echo '<p>Adjust the font size for the tab titles on different devices (desktop, tablet, and mobile).</p>';
+}
+
+// Callback function for the Heading Font section
+function pfp_heading_font_section_text() {
+    echo '<p>Adjust the font size for the headings on different devices (desktop, tablet, and mobile).</p>';
+}
+
+// Callback function for the Post Title Font section
+function pfp_post_title_font_section_text() {
+    echo '<p>Adjust the font size for the post titles on different devices (desktop, tablet, and mobile).</p>';
+}
+
+// Callback function for the Post Excerpt Font section
+function pfp_post_excerpt_font_section_text() {
+    echo '<p>Adjust the font size for the post excerpts on different devices (desktop, tablet, and mobile).</p>';
+}
+
+// Callback function for the Font Family section
+function pfp_font_family_section_text() {
+    echo '<p>Adjust the font family for the headings and body text.</p>';
+}
+
+function pfp_pagination_bg_color_input() {
+    $color = get_option('pfp_pagination_bg_color', '#FFFFFF'); // Default color is white
+    echo '<input type="text" name="pfp_pagination_bg_color" value="' . esc_attr($color) . '" class="color-picker" placeholder="#FFFFFF" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
+}
+function pfp_pagination_active_bg_color_input() {
+    $color = get_option('pfp_pagination_active_bg_color', '#FFFFFF'); // Default color is white
+    echo '<input type="text" name="pfp_pagination_active_bg_color" value="' . esc_attr($color) . '" class="color-picker" placeholder="#FFFFFF" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
+}
+
+
+function pfp_heading_font_family_input() {
+    $heading_font_family = get_option('pfp_heading_font_family', ''); // Default: inherit
+    echo '<input id="pfp_heading_font_family" name="pfp_heading_font_family" type="text" value="' . esc_attr($heading_font_family) . '" placeholder="Enter font family (e.g., Arial, sans-serif)" />';
+    echo '<p class="description">Leave blank to inherit the theme\'s font family.</p>';
+}
+
+function pfp_body_font_family_input() {
+    $body_font_family = get_option('pfp_body_font_family', ''); // Default: inherit
+    echo '<input id="pfp_body_font_family" name="pfp_body_font_family" type="text" value="' . esc_attr($body_font_family) . '" placeholder="Enter font family (e.g., Arial, sans-serif)" />';
+    echo '<p class="description">Leave blank to inherit the theme\'s font family.</p>';
+}
+
+function pfp_tablet_image_height_input() {
+    $tablet_image_height = get_option('pfp_tablet_image_height', 150); // Default: 150px
+    echo '<input id="pfp_tablet_image_height" name="pfp_tablet_image_height" type="number" min="50" max="1000" value="' . esc_attr($tablet_image_height) . '" />';
+}
+
+function pfp_mobile_image_height_input() {
+    $mobile_image_height = get_option('pfp_mobile_image_height', 100); // Default: 100px
+    echo '<input id="pfp_mobile_image_height" name="pfp_mobile_image_height" type="number" min="50" max="1000" value="' . esc_attr($mobile_image_height) . '" />';
+}
 
 function pfp_tablet_posts_per_row_input() {
     $tablet_posts_per_row = get_option('pfp_tablet_posts_per_row', 2); // Default: 2 posts per row for tablet
@@ -362,23 +668,7 @@ function pfp_font_sizes_section_text() {
 }
 
 function pfp_colors_section_text() {
-    echo '<p>Choose background colors for different elements.</p>';
-
-    // Retrieve stored color values
-    $colors = [
-        'PP Container Background Color' => get_option('pfp_pp_container_bg_color', '#ffffff'),
-        'Filter Container Background Color' => get_option('pfp_filter_container_bg_color', '#ffffff'),
-        'Post Item Background Color' => get_option('pfp_post_item_bg_color', '#ffffff')
-    ];
-
-    echo '<div style="display: flex; gap: 15px;">';
-    foreach ($colors as $label => $color) {
-        echo '<div style="display: flex; align-items: center; gap: 5px;">
-                <span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($color) . '; border: 1px solid #ccc;"></span>
-                <label>' . esc_html($label) . '</label>
-              </div>';
-    }
-    echo '</div>';
+    echo '<p>Customize the background colors for different elements in the Post Picker plugin.</p>';
 }
 
 function pfp_layout_section_text() {
@@ -407,10 +697,6 @@ function pfp_tag_label_input() {
     echo '<input id="pfp_tag_label" name="pfp_tag_label" type="text" value="' . esc_attr($tag_label) . '" />';
 }
 
-function pfp_heading_font_size_input() {
-    $heading_font_size = get_option('pfp_heading_font_size', '62'); // Default: 62px
-    echo '<input id="pfp_heading_font_size" name="pfp_heading_font_size" type="text" value="' . esc_attr($heading_font_size) . '" />';
-}
 
 
 function pfp_mobile_font_size_input() {
@@ -435,16 +721,19 @@ function pfp_post_excerpt_font_size_input() {
 function pfp_pp_container_bg_color_input() {
     $pp_container_bg_color = get_option('pfp_pp_container_bg_color', '#FFFFFF'); // Default: White
     echo '<input id="pfp_pp_container_bg_color" name="pfp_pp_container_bg_color" type="text" value="' . esc_attr($pp_container_bg_color) . '" class="pfp-color-field" placeholder="#FFFFFF" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($pp_container_bg_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
 }
 
 function pfp_filter_container_bg_color_input() {
     $filter_container_bg_color = get_option('pfp_filter_container_bg_color', '#FFFFFF'); // Default: White
     echo '<input id="pfp_filter_container_bg_color" name="pfp_filter_container_bg_color" type="text" value="' . esc_attr($filter_container_bg_color) . '" class="pfp-color-field" placeholder="#FFFFFF" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($filter_container_bg_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
 }
 
 function pfp_post_item_bg_color_input() {
     $post_item_bg_color = get_option('pfp_post_item_bg_color', '#FFFFFF'); // Default: White
     echo '<input id="pfp_post_item_bg_color" name="pfp_post_item_bg_color" type="text" value="' . esc_attr($post_item_bg_color) . '" class="pfp-color-field" placeholder="#FFFFFF" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($post_item_bg_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
 }
 
 function pfp_posts_per_row_input() {
@@ -461,10 +750,10 @@ function pfp_post_item_img_height_input() {
     $post_item_img_height = get_option('pfp_post_item_img_height', 200); // Default: 200px
     echo '<input id="pfp_post_item_img_height" name="pfp_post_item_img_height" type="number" min="50" max="1000" value="' . esc_attr($post_item_img_height) . '" />';
 }
-function pfp_tablet_heading_font_size_input() {
-    $tablet_heading_font_size = get_option('pfp_tablet_heading_font_size', '48'); // Default: 48px
-    echo '<input id="pfp_tablet_heading_font_size" name="pfp_tablet_heading_font_size" type="text" value="' . esc_attr($tablet_heading_font_size) . '" />';
-}
+
+
+
+
 // Input field callbacks for new settings
 function pfp_tablet_tab_font_size_input() {
     $tablet_tab_font_size = get_option('pfp_tablet_tab_font_size', '12'); // Default: 12px
@@ -496,10 +785,24 @@ function pfp_mobile_post_excerpt_font_size_input() {
     echo '<input id="pfp_mobile_post_excerpt_font_size" name="pfp_mobile_post_excerpt_font_size" type="text" value="' . esc_attr($mobile_post_excerpt_font_size) . '" />';
 }
 
-// Input field callbacks for new settings
-function pfp_mobile_heading_font_size_input() {
-    $mobile_heading_font_size = get_option('pfp_mobile_heading_font_size', '12'); // Default: 12px
-    echo '<input id="pfp_mobile_heading_font_size" name="pfp_mobile_heading_font_size" type="text" value="' . esc_attr($mobile_heading_font_size) . '" />';
+function pfp_selected_category_heading_color_input() {
+    $selected_category_heading_color = get_option('pfp_selected_category_heading_color', '#000000'); // Default: Black
+    echo '<input id="pfp_selected_category_heading_color" name="pfp_selected_category_heading_color" type="text" value="' . esc_attr($selected_category_heading_color) . '" />';
+}
+
+function pfp_tab_item_color_input() {
+    $tab_item_color = get_option('pfp_tab_item_color', '#000000'); // Default: Black
+    echo '<input id="pfp_tab_item_color" name="pfp_tab_item_color" type="text" value="' . esc_attr($tab_item_color) . '" />';
+}
+
+function pfp_post_item_heading_color_input() {
+    $post_item_heading_color = get_option('pfp_post_item_heading_color', '#000000'); // Default: Black
+    echo '<input id="pfp_post_item_heading_color" name="pfp_post_item_heading_color" type="text" value="' . esc_attr($post_item_heading_color) . '" />';
+}
+
+function pfp_post_item_text_color_input() {
+    $post_item_text_color = get_option('pfp_post_item_text_color', '#000000'); // Default: Black
+    echo '<input id="pfp_post_item_text_color" name="pfp_post_item_text_color" type="text" value="' . esc_attr($post_item_text_color) . '" />';
 }
 
 
@@ -564,7 +867,7 @@ function add_state_meta_box() {
 }
 add_action('add_meta_boxes', 'add_state_meta_box');
 
-// Render the 'State' taxonomy meta box
+
 // Render the custom taxonomy meta box
 function display_state_meta_box($post) {
     $taxonomy_name = get_option('pfp_taxonomy_name', 'state'); // Default: 'state'
@@ -781,15 +1084,29 @@ add_action('save_post', 'save_terms_meta_box');
 function pfp_display_filtered_posts() {
     ob_start(); // Start output buffering
 
+    // Fetch the predefined key from settings
+    $predefined_key = get_option('pfp_predefined_key', '');
+
+    // Check if the predefined key matches
+    if ($predefined_key === 'YOUR_PREDEFINED_KEY') {
+        // Display custom fields only if the key matches
+        echo '<div class="custom-fields">';
+        echo '<p>Custom fields go here.</p>';
+        echo '</div>';
+    } else {
+        // Optionally, display a message if the key does not match
+        echo '<p>Custom fields are not available.</p>';
+    }
+
     // Fetch custom background colors from settings
     $pp_container_bg_color = get_option('pfp_pp_container_bg_color', '#FFFFFF');
     $filter_container_bg_color = get_option('pfp_filter_container_bg_color', '#FFFFFF');
     $post_item_bg_color = get_option('pfp_post_item_bg_color', '#FFFFFF');
 
     // Fetch custom font sizes from settings
-    $heading_font_size = get_option('pfp_heading_font_size', '62'); // Default: 62px
-    $tablet_heading_font_size = get_option('pfp_tablet_heading_font_size', '48'); // Default: 48px
-    $mobile_heading_font_size = get_option('pfp_mobile_heading_font_size', '12'); // Default: 12px
+    $desktop_size = get_option('pfp_category_title_font_size', '20px');
+    $tablet_size = get_option('pfp_tablet_category_title_font_size', '18px');
+    $mobile_size = get_option('pfp_mobile_category_title_font_size', '16px');
     $tab_font_size = get_option('pfp_tab_font_size', '14'); // Default: 14px
     $tablet_tab_font_size = get_option('pfp_tablet_tab_font_size', '12'); // Default: 12px
     $mobile_tab_font_size = get_option('pfp_mobile_tab_font_size', '10'); // Default: 10px
@@ -799,6 +1116,17 @@ function pfp_display_filtered_posts() {
     $post_excerpt_font_size = get_option('pfp_post_excerpt_font_size', '14'); // Default: 14px
     $tablet_post_excerpt_font_size = get_option('pfp_tablet_post_excerpt_font_size', '12'); // Default: 12px
     $mobile_post_excerpt_font_size = get_option('pfp_mobile_post_excerpt_font_size', '10'); // Default: 10px
+    // Fetch font family settings
+    $heading_font_family = get_option('pfp_heading_font_family', ''); // Default: inherit
+    $body_font_family = get_option('pfp_body_font_family', '');       // Default: inherit
+
+    // Fetch custom font colors from settings
+    $selected_category_heading_color = get_option('pfp_selected_category_heading_color', '#000000'); // Default: Black
+    $tab_item_color = get_option('pfp_tab_item_color', '#000000'); // Default: Black
+   // Retrieve the subheading font color from the database
+   $subheading_color = get_option('pfp_subheading_font_color', '#000000'); // Default color is black
+    
+    
 
     // Fetch the custom taxonomy name from settings
     $taxonomy_name = get_option('pfp_taxonomy_name', 'state'); // Default: 'state'
@@ -818,9 +1146,44 @@ function pfp_display_filtered_posts() {
     <div class="seasonal-recipes">
         <div class="pp-container" style="background-color: <?php echo esc_attr($pp_container_bg_color); ?>;">
             <!-- Heading for Selected Category -->
-            <h3 id="selected-category-heading" class="selected-category-heading" style="font-size: <?php echo esc_attr($heading_font_size); ?>px;"></h3>
+            <h3 id="selected-category-heading" class="selected-category-heading" style="font-size: <?php echo esc_attr($desktop_size); ?>px; color: <?php echo esc_attr($selected_category_heading_color); ?>;"></h3>
 
             <style>
+             #selected-category-heading {
+            font-size: <?php echo esc_attr($desktop_size); ?>px;
+        }
+    
+        @media (max-width: 1024px) {
+            #selected-category-heading {
+                font-size: <?php echo esc_attr($tablet_size ); ?>px;
+            }
+        }
+        @media (max-width: 768px) {
+            #selected-category-heading {
+                font-size: <?php echo esc_attr($mobile_size); ?>px;
+            }
+        }
+                   /* Heading font family */
+        #selected-category-heading,
+        .tab-item,
+        #available-posts,
+        #user-state,
+        #month,.filter-dropdown label,
+        .post-item h3 {
+            font-family: <?php echo $heading_font_family ? esc_attr($heading_font_family) : 'inherit'; ?>;
+        }
+       
+        .filter-dropdown label{
+            color: <?php echo esc_attr($subheading_color); ?> !important;
+        }
+
+
+
+        /* Body font family */
+        .post-item p {
+            font-family: <?php echo $body_font_family ? esc_attr($body_font_family) : 'inherit'; ?>;
+        }
+
 @media (max-width: 768px) { /* Tablet View */
     .tab-item {
         font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px;
@@ -828,16 +1191,39 @@ function pfp_display_filtered_posts() {
     .tab-item.active {
         font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px;
     }
+    
 }
 
 @media (max-width: 480px) { /* Mobile View */
+
     .tab-item.active {
         font-size: <?php echo esc_attr($mobile_tab_font_size); ?>px;
     }
     .tab-item {
         font-size: <?php echo esc_attr($mobile_tab_font_size); ?>px;
     }
+ 
+    
 }
+/* Desktop view */
+.post-item img {
+        height: <?php echo esc_attr($desktop_image_height); ?>px;
+}
+
+        /* Tablet view */
+        @media only screen and (min-width: 768px) and (max-width: 1024px) {
+            .post-item img {
+                height: <?php echo esc_attr($tablet_image_height); ?>px;
+            }
+        }
+
+        /* Mobile view */
+        @media only screen and (max-width: 767px) {
+            .post-item img {
+                height: <?php echo esc_attr($mobile_image_height); ?>px;
+            }
+            
+        }
 </style>
 
 <div class="filter-container" style="background-color: <?php echo esc_attr($filter_container_bg_color); ?>;">
@@ -847,7 +1233,8 @@ function pfp_display_filtered_posts() {
             <ul class="tab-list" style="margin:0px;">
                 <?php foreach ($categories as $index => $category): ?>
                     <li data-category-id="<?php echo esc_attr($category->term_id); ?>" 
-                        class="tab-item <?php echo $index === 0 ? 'active' : ''; ?>">
+                    class="tab-item <?php echo $index === 0 ? 'active' : ''; ?>"
+                    style="color: <?php echo esc_attr($tab_item_color); ?>;">
                         <?php echo esc_html($category->name); ?>
                     </li>
                 <?php endforeach; ?>
@@ -920,9 +1307,7 @@ function pfp_display_filtered_posts() {
 
              /* Tablet view */
              @media only screen and (min-width: 768px) and (max-width: 1024px) {
-            #selected-category-heading {
-                font-size: <?php echo esc_attr($tablet_heading_font_size); ?>px;
-            }
+          
          
             .tab-item {
                 font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px;
@@ -940,9 +1325,7 @@ function pfp_display_filtered_posts() {
 
         /* Mobile view */
         @media only screen and (max-width: 767px) {
-            #selected-category-heading {
-                font-size: <?php echo esc_attr($mobile_heading_font_size); ?>px;
-            }
+          
             li.tab-item {
                 font-size: <?php echo esc_attr($mobile_tab_font_size); ?>px;
             }
@@ -1245,7 +1628,7 @@ color:  #10647F;
 font-weight: 500;
 line-height: 74.4px;
 text-align: center;
-font-family: 'archeron-pro' !important;
+
 }
 
 li.tab-item{
@@ -1268,18 +1651,18 @@ li.tab-item{
     padding: 10px 15px;
     border-bottom: 2px solid transparent; /* Set transparent border */
     color: #08303D59;
-    font-family: 'archeron-pro' !important;
+   
     
 }
 .tab-item.active {
     border-bottom: 1px solid #0C2E3A; /* Underline color for active tab */
     border-radius:0px ;
     color: #0C2E3A;
-    font-family: 'archeron-pro' !important;
+   
     font-size: 14px;
 }
 select#available-posts,select#user-state ,select#month {
-    font-family: 'archeron-pro' !important;
+    
     border: none;
     font-size:14px;
     font-weight: 400;
@@ -1353,20 +1736,19 @@ select#available-posts{
     padding: 5px 10px;
     border: 1px solid #ddd;
     border-radius: 5px;
-    color: #000;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 a.page-link {
-    color:#10647F;
+    
 }
 a.page-link.active {
     color:white;;
 }
 .page-link.active {
-    background-color: #36CC7D;
+    
     color: #000;
     font-weight: bold;
-    border-color: #36CC7D;
+    
 }
 
 .ellipsis {
@@ -1618,7 +2000,13 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
     // Get the number of posts per row and posts per page from settings
     $posts_per_row = get_option('pfp_posts_per_row', 4); // Default: 4 posts per row
     $posts_per_page = get_option('pfp_posts_per_page', 16); // Default: 16 posts per page
-    $post_item_img_height = get_option('pfp_post_item_img_height', 200); // Default: 200px
+    // Fetch image height settings
+    $desktop_image_height = get_option('pfp_post_item_img_height', 200); // Default: 200px
+    $tablet_image_height = get_option('pfp_tablet_image_height', 150); // Default: 150px
+    $mobile_image_height = get_option('pfp_mobile_image_height', 100); // Default: 100px
+
+    $post_item_heading_color = get_option('pfp_post_item_heading_color', '#000000'); 
+    $post_item_text_color = get_option('pfp_post_item_text_color', '#000000');
 
     // Setup the query parameters
     $args = array(
@@ -1672,7 +2060,30 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
 
     ob_start(); // Start output buffering
 
-  
+    // Add the style tag for responsive image heights
+    ?>
+    <style>
+        /* Default desktop image height */
+        .post-item img {
+            height: <?php echo esc_attr($desktop_image_height); ?>px;
+        }
+
+        /* Tablet view */
+        @media only screen and (min-width: 768px) and (max-width: 1024px) {
+            .post-item img {
+                height: <?php echo esc_attr($tablet_image_height); ?>px;
+            }
+        }
+
+        /* Mobile view */
+        @media only screen and (max-width: 767px) {
+            .post-item img {
+                height: <?php echo esc_attr($mobile_image_height); ?>px;
+            }
+        }
+    </style>
+    <?php
+
     if ($query->have_posts()) {
         // Pass the posts_per_row value to the grid container
         echo '<div class="post-grid" style="grid-template-columns: repeat(' . esc_attr($posts_per_row) . ', 1fr);">'; // Use the setting for posts per row
@@ -1682,9 +2093,14 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
             <a href="<?php the_permalink(); ?>" class="post-link">
                 <div class="posts-section">
                     <div class="post-item">
-                        <?php the_post_thumbnail('medium', ['style' => 'border-radius: 8px; height: ' . esc_attr($post_item_img_height) . 'px;']); ?>
-                        <h3 style="text-align: center; font-family: \'archeron-pro\' !important; font-weight: 700; color: #08303D;"><?php the_title(); ?></h3>
-                        <p style="color: #08303D; text-align: center;  font-weight: 400; font-family: \'Poppins\', sans-serif;"><?php echo wp_trim_words(get_the_excerpt(), 20); ?></p>
+                        <?php the_post_thumbnail('medium', ['style' => 'border-radius: 8px;']); ?>
+                        <h3 style="text-align: center; font-weight: 700; color: <?php echo esc_attr($post_item_heading_color); ?>;">
+  <?php the_title(); ?>
+</h3>
+
+<p style="color: <?php echo esc_attr($post_item_text_color); ?>; text-align: center; font-weight: 400;">
+    <?php echo wp_trim_words(get_the_excerpt(), 20); ?>
+</p>
                     </div>
                 </div>
             </a>
@@ -1696,7 +2112,7 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
         $total_pages = $query->max_num_pages;
         if ($total_pages > 1) {
             echo '<div class="pagination">';
-            
+
             // Previous button
             if ($paged > 1) {
                 echo '<a href="#" class="page-link" data-page="' . ($paged - 1) . '">&laquo; Previous</a>';
@@ -1715,9 +2131,14 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
             $start = max(1, $paged - $range);
             $end = min($total_pages, $paged + $range);
 
+            $pagination_bg_color = esc_attr(get_option('pfp_pagination_bg_color', '#ffffff'));
+            $pagination_active_bg_color = esc_attr(get_option('pfp_pagination_active_bg_color', '#000000'));
+
             for ($i = $start; $i <= $end; $i++) {
                 $active = $i == $paged ? 'active' : '';
-                echo '<a href="#" class="page-link ' . $active . '" data-page="' . $i . '">' . $i . '</a>';
+                $bg_color = $i == $paged ? $pagination_active_bg_color : $pagination_bg_color;
+
+                echo '<a href="#" class="page-link ' . $active . '" data-page="' . $i . '" style="background-color:' . $bg_color . ';">' . $i . '</a>';
             }
 
             // Display ellipsis and last page if needed
@@ -1725,12 +2146,12 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
                 if ($paged < $total_pages - 3) {
                     echo '<span class="ellipsis">...</span>';
                 }
-                echo '<a href="#" class="page-link" data-page="' . $total_pages . '">' . $total_pages . '</a>';
+                echo '<a href="#" class="page-link" data-page="' . $total_pages . '" style="background-color:' . $pagination_bg_color . ';">' . $total_pages . '</a>';
             }
 
             // Next button
             if ($paged < $total_pages) {
-                echo '<a href="#" class="page-link" data-page="' . ($paged + 1) . '">Next &raquo;</a>';
+                echo '<a href="#" class="page-link" data-page="' . ($paged + 1) . '" style="background-color:' . $pagination_bg_color . ';">Next &raquo;</a>';
             }
 
             echo '</div>';
@@ -1743,6 +2164,7 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
 
     return ob_get_clean(); // Return the buffered output
 }
+
 
 
 
