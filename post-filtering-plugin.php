@@ -1,7 +1,7 @@
 <?php
 /*
-Plugin Name: Post Picker
-Description: A plugin to filter posts by tags, state, and produce type.Shortcode [pfp_display_filtered_posts].
+Plugin Name: Post Picker 
+Description: A plugin to filter posts by tags, state, and produce type with customised fields.Shortcode [pfp_display_filtered_posts].
 Version: 1.0
 Author: Weamse
 */
