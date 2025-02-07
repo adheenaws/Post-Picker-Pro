@@ -1,7 +1,7 @@
 <?php
 /*
-Plugin Name: Post Picker 
-Description: A plugin to filter posts by tags, state, and produce type with customised fields.Shortcode [pfp_display_filtered_posts].
+Plugin Name: Post Picker
+Description: A plugin to filter posts by tags, custom tag, and produce type.Shortcode [pfp_display_filtered_posts].
 Version: 1.0
 Author: Weamse
 */
@@ -271,7 +271,7 @@ function pfp_register_settings() {
     // Add a new section for the predefined key
     add_settings_section(
         'pfp_predefined_key_section',
-        'Predefined Key',
+        'License Key',
         'pfp_predefined_key_section_text',
         'pfp-settings-general'
     );
@@ -279,7 +279,7 @@ function pfp_register_settings() {
     // Add the predefined key input field
     add_settings_field(
         'pfp_predefined_key',
-        'Predefined Key',
+        'License Key',
         'pfp_predefined_key_input',
         'pfp-settings-general',
         'pfp_predefined_key_section'
@@ -414,9 +414,11 @@ function pfp_register_settings() {
     add_settings_field('pfp_body_font_family', 'Body Font Family', 'pfp_body_font_family_input', 'pfp-settings-font-families', 'pfp_font_family_section');
 
     // General Settings
-    register_setting('pfp_settings_group', 'pfp_taxonomy_name', 'sanitize_text_field');
+    //register_setting('pfp_settings_group', 'pfp_taxonomy_name', 'sanitize_text_field');
     register_setting('pfp_settings_group', 'pfp_tag_label', 'sanitize_text_field');
     register_setting('pfp_settings_group', 'pfp_produce_type_label', 'sanitize_text_field');
+    register_setting('pfp_settings_group', 'pfp_custom_tag_label', 'sanitize_text_field'); // New Field
+
 
     add_settings_section(
         'pfp_general_section',
@@ -425,9 +427,10 @@ function pfp_register_settings() {
         'pfp-settings-general'
     );
 
-    add_settings_field('pfp_taxonomy_name', 'Taxonomy Name', 'pfp_taxonomy_name_input', 'pfp-settings-general', 'pfp_general_section');
-    add_settings_field('pfp_tag_label', 'Tag Label', 'pfp_tag_label_input', 'pfp-settings-general', 'pfp_general_section');
-    add_settings_field('pfp_produce_type_label', 'Produce Type Label', 'pfp_produce_type_label_input', 'pfp-settings-general', 'pfp_general_section');
+    //add_settings_field('pfp_taxonomy_name', 'Tag1', 'pfp_taxonomy_name_input', 'pfp-settings-general', 'pfp_general_section');
+    add_settings_field('pfp_tag_label', 'Tag2', 'pfp_tag_label_input', 'pfp-settings-general', 'pfp_general_section');
+    add_settings_field('pfp_produce_type_label', 'Term Label', 'pfp_produce_type_label_input', 'pfp-settings-general', 'pfp_general_section');
+    add_settings_field('pfp_custom_tag_label', 'Custom Tag Label', 'pfp_custom_tag_label_input', 'pfp-settings-general', 'pfp_general_section'); // New Field
 
     // Colors Section
     register_setting('pfp_settings_group', 'pfp_pp_container_bg_color', 'sanitize_hex_color');
@@ -548,15 +551,22 @@ add_settings_field(
 
 add_action('admin_init', 'pfp_register_settings');
 
+// Function for the new field
+function pfp_custom_tag_label_input() {
+    $custom_tag_label = get_option('pfp_custom_tag_label', 'Custom Tag'); // Default: 'Custom Tag'
+    echo '<input id="pfp_custom_tag_label" name="pfp_custom_tag_label" type="text" value="' . esc_attr($custom_tag_label) . '" />';
+}
+
 function pfp_subheading_font_color_input() {
     $subheading_color = get_option('pfp_subheading_font_color', '#000000'); // Default color is black
-    echo '<input type="text" name="pfp_subheading_font_color" value="' . esc_attr($subheading_color) . '" class="my-color-field" data-default-color="#000000" />';
+    echo '<input type="text" name="pfp_subheading_font_color" value="' . esc_attr($subheading_color) . '" class="color-picker" placeholder="#000000" data-default-color="#000000" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($subheading_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
 }
 
 
 // Callback function for the predefined key section text
 function pfp_predefined_key_section_text() {
-    echo '<p>Enter the predefined key to enable custom fields.</p>';
+    echo '<p>Enter the license key to enable custom fields.</p>';
 }
 
 // Callback function for the predefined key input field
@@ -620,6 +630,7 @@ function pfp_pagination_bg_color_input() {
     echo '<input type="text" name="pfp_pagination_bg_color" value="' . esc_attr($color) . '" class="color-picker" placeholder="#FFFFFF" />';
     echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
 }
+
 function pfp_pagination_active_bg_color_input() {
     $color = get_option('pfp_pagination_active_bg_color', '#FFFFFF'); // Default color is white
     echo '<input type="text" name="pfp_pagination_active_bg_color" value="' . esc_attr($color) . '" class="color-picker" placeholder="#FFFFFF" />';
@@ -685,11 +696,6 @@ function pfp_section_text() {
     echo '<p>Enter the custom names for the taxonomy and tag label.</p>';
 }
 
-// Taxonomy name input field
-function pfp_taxonomy_name_input() {
-    $taxonomy_name = get_option('pfp_taxonomy_name', 'state'); // Default: 'state'
-    echo '<input id="pfp_taxonomy_name" name="pfp_taxonomy_name" type="text" value="' . esc_attr($taxonomy_name) . '" />';
-}
 
 // Tag label input field
 function pfp_tag_label_input() {
@@ -752,8 +758,6 @@ function pfp_post_item_img_height_input() {
 }
 
 
-
-
 // Input field callbacks for new settings
 function pfp_tablet_tab_font_size_input() {
     $tablet_tab_font_size = get_option('pfp_tablet_tab_font_size', '12'); // Default: 12px
@@ -787,23 +791,28 @@ function pfp_mobile_post_excerpt_font_size_input() {
 
 function pfp_selected_category_heading_color_input() {
     $selected_category_heading_color = get_option('pfp_selected_category_heading_color', '#000000'); // Default: Black
-    echo '<input id="pfp_selected_category_heading_color" name="pfp_selected_category_heading_color" type="text" value="' . esc_attr($selected_category_heading_color) . '" />';
+    echo '<input type="text" id="pfp_selected_category_heading_color" name="pfp_selected_category_heading_color" value="' . esc_attr($selected_category_heading_color) . '" class="color-picker" placeholder="#000000" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($selected_category_heading_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
 }
 
 function pfp_tab_item_color_input() {
     $tab_item_color = get_option('pfp_tab_item_color', '#000000'); // Default: Black
-    echo '<input id="pfp_tab_item_color" name="pfp_tab_item_color" type="text" value="' . esc_attr($tab_item_color) . '" />';
+    echo '<input type="text" id="pfp_tab_item_color" name="pfp_tab_item_color" value="' . esc_attr($tab_item_color) . '" class="color-picker" placeholder="#000000" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($tab_item_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
 }
 
 function pfp_post_item_heading_color_input() {
     $post_item_heading_color = get_option('pfp_post_item_heading_color', '#000000'); // Default: Black
-    echo '<input id="pfp_post_item_heading_color" name="pfp_post_item_heading_color" type="text" value="' . esc_attr($post_item_heading_color) . '" />';
+    echo '<input type="text" id="pfp_post_item_heading_color" name="pfp_post_item_heading_color" value="' . esc_attr($post_item_heading_color) . '" class="color-picker" placeholder="#000000" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($post_item_heading_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
 }
 
 function pfp_post_item_text_color_input() {
     $post_item_text_color = get_option('pfp_post_item_text_color', '#000000'); // Default: Black
-    echo '<input id="pfp_post_item_text_color" name="pfp_post_item_text_color" type="text" value="' . esc_attr($post_item_text_color) . '" />';
+    echo '<input type="text" id="pfp_post_item_text_color" name="pfp_post_item_text_color" value="' . esc_attr($post_item_text_color) . '" class="color-picker" placeholder="#000000" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($post_item_text_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
 }
+
 
 
 
@@ -818,23 +827,20 @@ function pfp_enqueue_color_picker($hook) {
 add_action('admin_enqueue_scripts', 'pfp_enqueue_color_picker');
 
 
-// Create the custom taxonomy
+// Create the 'State' taxonomy
 function create_state_taxonomy() {
-    $taxonomy_name = get_option('pfp_taxonomy_name', 'state'); // Default: 'state'
-    $taxonomy_label = ucfirst($taxonomy_name); // Capitalize the label
-
     $labels = array(
-        'name'              => _x($taxonomy_label . 's', 'taxonomy general name', 'textdomain'),
-        'singular_name'     => _x($taxonomy_label, 'taxonomy singular name', 'textdomain'),
-        'search_items'      => __('Search ' . $taxonomy_label . 's', 'textdomain'),
-        'all_items'         => __('All ' . $taxonomy_label . 's', 'textdomain'),
-        'parent_item'       => __('Parent ' . $taxonomy_label, 'textdomain'),
-        'parent_item_colon' => __('Parent ' . $taxonomy_label . ':', 'textdomain'),
-        'edit_item'         => __('Edit ' . $taxonomy_label, 'textdomain'),
-        'update_item'       => __('Update ' . $taxonomy_label, 'textdomain'),
-        'add_new_item'      => __('Add New ' . $taxonomy_label, 'textdomain'),
-        'new_item_name'     => __('New ' . $taxonomy_label . ' Name', 'textdomain'),
-        'menu_name'         => __($taxonomy_label, 'textdomain'),
+        'name'              => _x('Custom Tags', 'taxonomy general name', 'textdomain'),
+        'singular_name'     => _x('Custom Tags', 'taxonomy singular name', 'textdomain'),
+        'search_items'      => __('Search Custom Tags', 'textdomain'),
+        'all_items'         => __('All Custom Tags', 'textdomain'),
+        'parent_item'       => __('Parent Custom Tags', 'textdomain'),
+        'parent_item_colon' => __('Parent Custom Tags:', 'textdomain'),
+        'edit_item'         => __('Edit Custom Tags', 'textdomain'),
+        'update_item'       => __('Update Custom Tags', 'textdomain'),
+        'add_new_item'      => __('Add New Custom Tags', 'textdomain'),
+        'new_item_name'     => __('New Custom Tags Name', 'textdomain'),
+        'menu_name'         => __('Custom Tags', 'textdomain'),
     );
 
     $args = array(
@@ -843,22 +849,18 @@ function create_state_taxonomy() {
         'show_ui'           => true,
         'show_admin_column' => true,
         'query_var'         => true,
-        'rewrite'           => array('slug' => $taxonomy_name),
+        'rewrite'           => array('slug' => 'custom_tag'),
     );
 
-    register_taxonomy($taxonomy_name, array('post'), $args);
+    register_taxonomy('custom_tag', array('post'), $args);
 }
 add_action('init', 'create_state_taxonomy', 0);
 
-
-
-
-// Create a custom meta box for the custom taxonomy
+// Create a custom meta box for 'State' taxonomy
 function add_state_meta_box() {
-    $taxonomy_label = ucfirst(get_option('pfp_taxonomy_name', 'state')); // Default: 'State'
     add_meta_box(
         'state_meta_box',            // ID of the meta box
-        $taxonomy_label,             // Title (dynamic)
+        'Custom Tags',               // Title
         'display_state_meta_box',    // Callback function
         'post',                      // Post type
         'side',                      // Context
@@ -867,34 +869,27 @@ function add_state_meta_box() {
 }
 add_action('add_meta_boxes', 'add_state_meta_box');
 
-
-// Render the custom taxonomy meta box
 function display_state_meta_box($post) {
-    $taxonomy_name = get_option('pfp_taxonomy_name', 'state'); // Default: 'state'
-    $taxonomy_label = ucfirst($taxonomy_name); // Capitalize the label
-
-    // Get the terms for the custom taxonomy
-    $terms = get_terms(array(
-        'taxonomy' => $taxonomy_name,
+    $states = get_terms(array(
+        'taxonomy'   => 'custom_tag',
         'hide_empty' => false,
     ));
 
-    // Get selected terms for the current post
-    $selected_terms = get_the_terms($post->ID, $taxonomy_name);
-    $selected_terms = !empty($selected_terms) ? wp_list_pluck($selected_terms, 'term_id') : array();
+    $selected_states = get_the_terms($post->ID, 'custom_tag');
+    $selected_states = !empty($selected_states) ? wp_list_pluck($selected_states, 'term_id') : array();
 
     ?>
     <div id="statediv" class="categorydiv">
         <ul id="state-tabs" class="category-tabs">
-            <li class="tabs"><a href="#state-all"><?php _e('All ' . $taxonomy_label . 's'); ?></a></li>
+            <li class="tabs"><a href="#state-all"><?php _e('All Custom Tag'); ?></a></li>
         </ul>
         <div id="state-all" class="tabs-panel">
             <ul id="statechecklist" class="categorychecklist form-no-clear">
-                <?php foreach ($terms as $term) : ?>
+                <?php foreach ($states as $state) : ?>
                     <li>
                         <label>
-                            <input type="checkbox" name="state[]" value="<?php echo esc_attr($term->term_id); ?>" <?php checked(in_array($term->term_id, $selected_terms)); ?> />
-                            <?php echo esc_html($term->name); ?>
+                            <input type="checkbox" name="state[]" value="<?php echo esc_attr($state->term_id); ?>" <?php checked(in_array($state->term_id, $selected_states)); ?> />
+                            <?php echo esc_html($state->name); ?>
                         </label>
                     </li>
                 <?php endforeach; ?>
@@ -904,23 +899,20 @@ function display_state_meta_box($post) {
     <?php
 }
 
-// Save the state taxonomy terms when the post is saved
-
 function save_state_meta_box($post_id) {
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
         return;
     }
 
-    $taxonomy_name = get_option('pfp_taxonomy_name', 'state'); // Default: 'state'
-
     if (isset($_POST['state'])) {
         $state_ids = array_map('intval', $_POST['state']);
-        wp_set_post_terms($post_id, $state_ids, $taxonomy_name);
+        wp_set_post_terms($post_id, $state_ids, 'custom_tag');
     } else {
-        wp_set_post_terms($post_id, array(), $taxonomy_name);
+        wp_set_post_terms($post_id, array(), 'custom_tag');
     }
 }
 add_action('save_post', 'save_state_meta_box');
+
 
 
 // Create the 'Terms' taxonomy
@@ -1093,10 +1085,7 @@ function pfp_display_filtered_posts() {
         echo '<div class="custom-fields">';
         echo '<p>Custom fields go here.</p>';
         echo '</div>';
-    } else {
-        // Optionally, display a message if the key does not match
-        echo '<p>Custom fields are not available.</p>';
-    }
+    } 
 
     // Fetch custom background colors from settings
     $pp_container_bg_color = get_option('pfp_pp_container_bg_color', '#FFFFFF');
@@ -1129,7 +1118,7 @@ function pfp_display_filtered_posts() {
     
 
     // Fetch the custom taxonomy name from settings
-    $taxonomy_name = get_option('pfp_taxonomy_name', 'state'); // Default: 'state'
+    $taxonomy_name = get_option('pfp_taxonomy_name', 'custom_tag'); // Default: 'state'
     $taxonomy_label = ucfirst($taxonomy_name); // Capitalize the label
 
     // Fetch the custom "Produce Type" label from settings
@@ -1867,21 +1856,20 @@ add_action('wp_ajax_nopriv_pfp_get_available_terms', 'pfp_get_available_terms');
 
 function pfp_get_dynamic_filters() {
     $category_id = intval($_POST['category_id']);
-    
-    // Fetch the custom taxonomy name from settings
-    $taxonomy_name = get_option('pfp_taxonomy_name', 'state'); // Default: 'state'
-    $taxonomy_label = ucfirst($taxonomy_name); // Capitalize the label
+
+    // Fetch the custom tag label value from settings
+    $custom_tag_label = get_option('pfp_custom_tag_label', 'User State'); // Default: 'User State'
 
     // Fetch states associated with the selected category
     $states = get_terms(array(
-        'taxonomy'   => $taxonomy_name, // Use dynamic taxonomy name
+        'taxonomy'   => 'custom_tag',
         'hide_empty' => true,
         'object_ids' => get_objects_in_term($category_id, 'category'),
     ));
 
-    // Fetch all states
+    // Fetch states associated with the selected category
     $mystates = get_terms(array(
-        'taxonomy'   => $taxonomy_name, // Use dynamic taxonomy name
+        'taxonomy'   => 'custom_tag',
         'hide_empty' => false,
     ));
 
@@ -1891,58 +1879,58 @@ function pfp_get_dynamic_filters() {
         'object_ids' => get_objects_in_term($category_id, 'category'),
     ));
 
-    // Fetch all tags
+    // Fetch tags associated with the selected category
     $mytags = get_terms(array(
         'taxonomy' => 'post_tag',
         'hide_empty' => false,
-        'orderby' => 'term_id', // Sort by term ID (creation order)
+        'orderby' => 'term_id',
     ));
-
+    
     ob_start(); // Start output buffering
 
-    // Vertical Separator before User State Dropdown
+    // Vertical Separator before the custom tag dropdown
     if ($states || $tags) { ?>
         <div class="vertical-separator"></div>
-    <?php } 
+    <?php } ?>
 
-    // Dropdown for User States
-    if ($states) { ?>
+    <!-- Dropdown for Custom Tag Label -->
+    <?php if ($states) { ?>
         <div class="filter-dropdown">
-            <label for="user-state"><?php echo esc_html($taxonomy_label); ?></label>
+            <label for="user-state"><?php echo esc_html($custom_tag_label); ?></label>
             <select id="user-state">
-                <option value="">Select your <?php echo esc_html(strtolower($taxonomy_label)); ?></option>
+                <option value=""><?php echo esc_html__('Select ', 'text-domain') . esc_html($custom_tag_label); ?></option>
                 <?php foreach ($mystates as $state) { ?>
                     <option value="<?php echo esc_attr($state->term_id); ?>"><?php echo esc_html($state->name); ?></option>
                 <?php } ?>
             </select>
         </div>
-    <?php } 
+    <?php } ?>
 
-    // Vertical Separator before Month Dropdown
-    if ($states && $tags) { ?>
+    <!-- Vertical Separator before Month Dropdown -->
+    <?php if ($states && $tags) { ?>
         <div class="vertical-separator"></div>
-    <?php } 
+    <?php } ?>
 
-    // Dropdown for Month
-    $tag_label = get_option('pfp_tag_label', 'Month'); // Default: 'Month'
-    
-    if ($tags) { ?>
+    <!-- Dropdown for Month -->
+    <?php if ($tags) { ?>
         <div class="filter-dropdown">
-            <label for="month"><?php echo esc_html($tag_label); ?></label>
+            <label for="month">Month</label>
             <select id="month">
-                <option value="">Select <?php echo esc_html(strtolower($tag_label)); ?></option>
+                <option value=""><?php echo esc_html__('Select month', 'text-domain'); ?></option>
                 <?php foreach ($mytags as $tag) { ?>
                     <option value="<?php echo esc_attr($tag->term_id); ?>"><?php echo esc_html($tag->name); ?></option>
                 <?php } ?>
             </select>
         </div>
-    <?php } 
+    <?php } ?>
 
+    <?php
     echo ob_get_clean(); // Return the buffered output
     wp_die(); // Properly terminate AJAX request
 }
 add_action('wp_ajax_pfp_get_dynamic_filters', 'pfp_get_dynamic_filters');
 add_action('wp_ajax_nopriv_pfp_get_dynamic_filters', 'pfp_get_dynamic_filters');
+
 
 
 
@@ -1977,25 +1965,32 @@ function pfp_get_available_posts() {
 
 
 function pfp_filter_posts() {
-    // Get filter values from AJAX request
+    error_log(print_r($_POST, true)); // Log the POST data
+
     $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : '';
     $user_state  = isset($_POST['user_state']) ? intval($_POST['user_state']) : '';
     $month       = isset($_POST['month']) ? intval($_POST['month']) : '';
-    $available_term = isset($_POST['available_post']) ? intval($_POST['available_post']) : '';  // 'available_post' is now the term ID
-    $paged       = isset($_POST['paged']) ? intval($_POST['paged']) : 1; // Get the current page
+    $available_term = isset($_POST['available_post']) ? intval($_POST['available_post']) : '';
+    $paged       = isset($_POST['paged']) ? intval($_POST['paged']) : 1;
 
+    error_log("Category ID: $category_id");
+    error_log("User State: $user_state");
+    error_log("Month: $month");
+    error_log("Available Term: $available_term");
+    error_log("Page: $paged");
 
-    // Ensure we only output what's necessary
-    $filtered_posts_html = pfp_get_filtered_posts($category_id, $user_state, $month, $available_term,$paged);
+    $filtered_posts_html = pfp_get_filtered_posts($category_id, $user_state, $month, $available_term, $paged);
 
-    // Return only the HTML that should be displayed
     if (!empty($filtered_posts_html)) {
         echo $filtered_posts_html;
     }
 
-    wp_die(); // Ensure the script stops here without any extra output
+    wp_die();
 }
 
+
+add_action('wp_ajax_pfp_filter_posts', 'pfp_filter_posts');
+add_action('wp_ajax_nopriv_pfp_filter_posts', 'pfp_filter_posts');
 function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = '', $available_term = '', $paged = 1) {
     // Get the number of posts per row and posts per page from settings
     $posts_per_row = get_option('pfp_posts_per_row', 4); // Default: 4 posts per row
@@ -2025,13 +2020,10 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
         );
     }
 
-    // Fetch the custom taxonomy name from settings
-    $taxonomy_name = get_option('pfp_taxonomy_name', 'state'); // Default: 'state'
-
-    // Filter by user state
-    if ($user_state) {
+      // Filter by user state
+      if ($user_state) {
         $args['tax_query'][] = array(
-            'taxonomy' => $taxonomy_name, // Use dynamic taxonomy name
+            'taxonomy' => 'custom_tag',
             'field'    => 'term_id',
             'terms'    => $user_state,
         );
@@ -2183,8 +2175,3 @@ function pfp_enqueue_tab_scripts() {
     wp_enqueue_script('pfp-tab-scripts', plugin_dir_url(__FILE__) . '/post-filtering-plugin.js', array('jquery'), null, true);
 }
 add_action('wp_enqueue_scripts', 'pfp_enqueue_tab_scripts');
-
-
-
-
-
