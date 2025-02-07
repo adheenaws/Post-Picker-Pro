@@ -428,7 +428,7 @@ function pfp_register_settings() {
     );
 
     //add_settings_field('pfp_taxonomy_name', 'Tag1', 'pfp_taxonomy_name_input', 'pfp-settings-general', 'pfp_general_section');
-    add_settings_field('pfp_tag_label', 'Tag2', 'pfp_tag_label_input', 'pfp-settings-general', 'pfp_general_section');
+    add_settings_field('pfp_tag_label', 'General Tag Label', 'pfp_tag_label_input', 'pfp-settings-general', 'pfp_general_section');
     add_settings_field('pfp_produce_type_label', 'Term Label', 'pfp_produce_type_label_input', 'pfp-settings-general', 'pfp_general_section');
     add_settings_field('pfp_custom_tag_label', 'Custom Tag Label', 'pfp_custom_tag_label_input', 'pfp-settings-general', 'pfp_general_section'); // New Field
 
@@ -443,6 +443,8 @@ function pfp_register_settings() {
     register_setting('pfp_settings_group', 'pfp_post_item_heading_color', 'sanitize_hex_color');
     register_setting('pfp_settings_group', 'pfp_post_item_text_color', 'sanitize_hex_color');
     register_setting('pfp_settings_group', 'pfp_subheading_font_color', 'sanitize_hex_color');
+    register_setting('pfp_settings_group', 'pfp_pagination_font_color', 'sanitize_hex_color');
+
     add_settings_field('pfp_subheading_font_color', 'Subheading Font Color', 'pfp_subheading_font_color_input', 'pfp-settings-colors', 'pfp_colors_section'); // New field for subheading font color
 
     add_settings_section(
@@ -452,7 +454,7 @@ function pfp_register_settings() {
         'pfp-settings-colors'
     );
 
-    add_settings_field('pfp_pp_container_bg_color', 'PP Container Background Color', 'pfp_pp_container_bg_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+    add_settings_field('pfp_pp_container_bg_color', 'Filter Outer Container Background Color', 'pfp_pp_container_bg_color_input', 'pfp-settings-colors', 'pfp_colors_section');
     add_settings_field('pfp_filter_container_bg_color', 'Filter Container Background Color', 'pfp_filter_container_bg_color_input', 'pfp-settings-colors', 'pfp_colors_section');
     add_settings_field('pfp_post_item_bg_color', 'Post Item Background Color', 'pfp_post_item_bg_color_input', 'pfp-settings-colors', 'pfp_colors_section');
     add_settings_field('pfp_pagination_bg_color', 'Pagination Background Color', 'pfp_pagination_bg_color_input', 'pfp-settings-colors', 'pfp_colors_section');
@@ -460,6 +462,8 @@ function pfp_register_settings() {
     add_settings_field('pfp_selected_category_heading_color', 'Selected Category Heading Color', 'pfp_selected_category_heading_color_input', 'pfp-settings-colors', 'pfp_colors_section');
     add_settings_field('pfp_tab_item_color', 'Tab Item Color', 'pfp_tab_item_color_input', 'pfp-settings-colors', 'pfp_colors_section');
     add_settings_field('pfp_post_item_heading_color', 'Post Item Heading Color', 'pfp_post_item_heading_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+    add_settings_field('pfp_pagination_font_color', 'Pagination Font Color', 'pfp_pagination_font_color_input', 'pfp-settings-colors', 'pfp_colors_section');
+
     add_settings_field('pfp_post_item_text_color', 'Post Item Text Color', 'pfp_post_item_text_color_input', 'pfp-settings-colors', 'pfp_colors_section');
 
  // Layout Register Settings
@@ -551,6 +555,12 @@ add_settings_field(
 
 add_action('admin_init', 'pfp_register_settings');
 
+function pfp_pagination_font_color_input() {
+    $color = get_option('pfp_pagination_font_color', '#000000'); // Default to black
+    echo '<input type="text" class="color-picker" name="pfp_pagination_font_color" value="' . esc_attr($color) . '" data-default-color="#000000" />';
+}
+
+
 // Function for the new field
 function pfp_custom_tag_label_input() {
     $custom_tag_label = get_option('pfp_custom_tag_label', 'Custom Tag'); // Default: 'Custom Tag'
@@ -566,7 +576,7 @@ function pfp_subheading_font_color_input() {
 
 // Callback function for the predefined key section text
 function pfp_predefined_key_section_text() {
-    echo '<p>Enter the license key to enable custom fields.</p>';
+    echo '<p>Enter the license key .</p>';
 }
 
 // Callback function for the predefined key input field
@@ -877,16 +887,19 @@ function display_state_meta_box($post) {
 
     $selected_states = get_the_terms($post->ID, 'custom_tag');
     $selected_states = !empty($selected_states) ? wp_list_pluck($selected_states, 'term_id') : array();
+    // Retrieve custom tag label from the settings
+    $custom_tag_label = get_option('pfp_custom_tag_label', 'Custom Tag'); // Default: 'Custom Tag'
 
     ?>
     <div id="statediv" class="categorydiv">
         <ul id="state-tabs" class="category-tabs">
-            <li class="tabs"><a href="#state-all"><?php _e('All Custom Tag'); ?></a></li>
+            <li class="tabs"><a href="#state-all"><?php echo esc_html__('All ', 'text-domain') . esc_html($custom_tag_label); ?></a></li>
         </ul>
         <div id="state-all" class="tabs-panel">
+            <input type="text" id="state-search" placeholder="<?php echo esc_html__('Search states...', 'text-domain'); ?>" style="margin-bottom: 10px; width: 100%;" />
             <ul id="statechecklist" class="categorychecklist form-no-clear">
                 <?php foreach ($states as $state) : ?>
-                    <li>
+                    <li class="state-item">
                         <label>
                             <input type="checkbox" name="state[]" value="<?php echo esc_attr($state->term_id); ?>" <?php checked(in_array($state->term_id, $selected_states)); ?> />
                             <?php echo esc_html($state->name); ?>
@@ -896,8 +909,23 @@ function display_state_meta_box($post) {
             </ul>
         </div>
     </div>
+    <script>
+        document.getElementById('state-search').addEventListener('keyup', function() {
+            var filter = this.value.toLowerCase();
+            var items = document.querySelectorAll('#statechecklist .state-item');
+            items.forEach(function(item) {
+                var label = item.querySelector('label').textContent.toLowerCase();
+                if (label.indexOf(filter) > -1) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    </script>
     <?php
 }
+
 
 function save_state_meta_box($post_id) {
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
@@ -1138,6 +1166,17 @@ function pfp_display_filtered_posts() {
             <h3 id="selected-category-heading" class="selected-category-heading" style="font-size: <?php echo esc_attr($desktop_size); ?>px; color: <?php echo esc_attr($selected_category_heading_color); ?>;"></h3>
 
             <style>
+                /* Add the CSS here */
+        .filter-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
              #selected-category-heading {
             font-size: <?php echo esc_attr($desktop_size); ?>px;
         }
@@ -1858,7 +1897,10 @@ function pfp_get_dynamic_filters() {
     $category_id = intval($_POST['category_id']);
 
     // Fetch the custom tag label value from settings
-    $custom_tag_label = get_option('pfp_custom_tag_label', 'User State'); // Default: 'User State'
+    $custom_tag_label = get_option('pfp_custom_tag_label', 'Custom Tag'); // Default: 'User State'
+     // Fetch the custom tag label value from settings
+     $tag_label = get_option('pfp_tag_label', 'Tag Label'); // Default: 'User State'
+
 
     // Fetch states associated with the selected category
     $states = get_terms(array(
@@ -1911,10 +1953,12 @@ function pfp_get_dynamic_filters() {
         <div class="vertical-separator"></div>
     <?php } ?>
 
+    
+
     <!-- Dropdown for Month -->
     <?php if ($tags) { ?>
         <div class="filter-dropdown">
-            <label for="month">Month</label>
+            <label for="month"><?php echo esc_html($tag_label); ?></label>
             <select id="month">
                 <option value=""><?php echo esc_html__('Select month', 'text-domain'); ?></option>
                 <?php foreach ($mytags as $tag) { ?>
@@ -2002,7 +2046,7 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
 
     $post_item_heading_color = get_option('pfp_post_item_heading_color', '#000000'); 
     $post_item_text_color = get_option('pfp_post_item_text_color', '#000000');
-
+    $pagination_font_color = esc_attr(get_option('pfp_pagination_font_color', '#000000')); // Default black
     // Setup the query parameters
     $args = array(
         'post_type'      => 'post',
@@ -2107,7 +2151,7 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
 
             // Previous button
             if ($paged > 1) {
-                echo '<a href="#" class="page-link" data-page="' . ($paged - 1) . '">&laquo; Previous</a>';
+                echo '<a href="#" class="page-link" data-page="' . ($paged - 1) . '" style="background-color:' . $pagination_bg_color . '; color:' . $pagination_font_color . ';">&laquo; Previous</a>';
             }
 
             // Display first page and ellipsis if needed
@@ -2130,20 +2174,20 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
                 $active = $i == $paged ? 'active' : '';
                 $bg_color = $i == $paged ? $pagination_active_bg_color : $pagination_bg_color;
 
-                echo '<a href="#" class="page-link ' . $active . '" data-page="' . $i . '" style="background-color:' . $bg_color . ';">' . $i . '</a>';
-            }
+                echo '<a href="#" class="page-link ' . $active . '" data-page="' . $i . '" 
+                style="background-color:' . $bg_color . '; color:' . $pagination_font_color . ';">' . $i . '</a>';            }
 
             // Display ellipsis and last page if needed
             if ($paged < $total_pages - 2) {
                 if ($paged < $total_pages - 3) {
                     echo '<span class="ellipsis">...</span>';
                 }
-                echo '<a href="#" class="page-link" data-page="' . $total_pages . '" style="background-color:' . $pagination_bg_color . ';">' . $total_pages . '</a>';
+                echo '<a href="#" class="page-link" data-page="' . $total_pages . '" style="background-color:' . $pagination_bg_color . '; color:' . $pagination_font_color . ';">' . $total_pages . '</a>';
             }
 
             // Next button
             if ($paged < $total_pages) {
-                echo '<a href="#" class="page-link" data-page="' . ($paged + 1) . '" style="background-color:' . $pagination_bg_color . ';">Next &raquo;</a>';
+                echo '<a href="#" class="page-link" data-page="' . ($paged + 1) . '" style="background-color:' . $pagination_bg_color . '; color:' . $pagination_font_color . ';">Next &raquo;</a>';
             }
 
             echo '</div>';
