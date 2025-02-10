@@ -1174,7 +1174,7 @@ function pfp_display_filtered_posts() {
     $selected_category_heading_color = get_option('pfp_selected_category_heading_color', '#000000'); // Default: Black
     $tab_item_color = get_option('pfp_tab_item_color', '#000000'); // Default: Black
    // Retrieve the subheading font color from the database
-   $subheading_color = get_option('pfp_subheading_font_color', '#000000'); // Default color is black
+    $subheading_color = get_option('pfp_subheading_font_color', '#000000'); // Default color is black
     
     
 
@@ -1193,10 +1193,13 @@ function pfp_display_filtered_posts() {
     ));
 
     ?>
-    <div class="seasonal-recipes">
-        <div class="pp-container" style="background-color: <?php echo esc_attr($pp_container_bg_color); ?>;">
-            <!-- Heading for Selected Category -->
-            <h3 id="selected-category-heading" class="selected-category-heading" style="font-size: <?php echo esc_attr($desktop_size); ?>px; color: <?php echo esc_attr($selected_category_heading_color); ?>;"></h3>
+    <<div class="seasonal-recipes">
+    <div class="pp-container" style="background-color: <?php echo esc_attr($pp_container_bg_color); ?>;">
+        <!-- Heading for Selected Category -->
+        <h3 id="selected-category-heading" class="selected-category-heading" style="color: <?php echo esc_attr($selected_category_heading_color); ?>;">
+           
+        </h3>
+
 
             <style>
                 /* Add the CSS here */
@@ -1210,9 +1213,25 @@ function pfp_display_filtered_posts() {
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
-             #selected-category-heading {
-            font-size: <?php echo esc_attr($desktop_size); ?>px;
-        }
+ /* Default font size */
+ #selected-category-heading {
+                font-size: <?php echo esc_attr($desktop_size); ?>px;
+            }
+
+            /* Tablet View */
+            @media (max-width: 1024px) {
+                #selected-category-heading {
+                    font-size: <?php echo esc_attr($tablet_size); ?>px;
+                }
+            }
+
+            /* Mobile View */
+            @media (max-width: 767px) {
+                #selected-category-heading {
+                    font-size: <?php echo esc_attr($mobile_size); ?>px;
+                }
+            }
+
     
    /* Apply image height settings */
    .post-item img {
@@ -1234,16 +1253,7 @@ function pfp_display_filtered_posts() {
     }
 
             
-        @media (max-width: 1024px) {
-            #selected-category-heading {
-                font-size: <?php echo esc_attr($tablet_size ); ?>px;
-            }
-        }
-        @media (max-width: 768px) {
-            #selected-category-heading {
-                font-size: <?php echo esc_attr($mobile_size); ?>px;
-            }
-        }
+  
                    /* Heading font family */
         #selected-category-heading,
         .tab-item,
@@ -1284,6 +1294,9 @@ function pfp_display_filtered_posts() {
 }
 
 @media (max-width: 768px) { /* Tablet View */
+
+
+
     .tab-item {
         font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px;
     }
