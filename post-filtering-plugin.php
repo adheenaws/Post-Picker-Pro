@@ -444,6 +444,8 @@ function pfp_register_settings() {
     register_setting('pfp_settings_group', 'pfp_post_item_text_color', 'sanitize_hex_color');
     register_setting('pfp_settings_group', 'pfp_subheading_font_color', 'sanitize_hex_color');
     register_setting('pfp_settings_group', 'pfp_pagination_font_color', 'sanitize_hex_color');
+    register_setting('pfp_settings_group', 'pfp_pagination_active_font_color', 'sanitize_hex_color');
+
 
     add_settings_field('pfp_subheading_font_color', 'Subheading Font Color', 'pfp_subheading_font_color_input', 'pfp-settings-colors', 'pfp_colors_section'); // New field for subheading font color
 
@@ -463,7 +465,7 @@ function pfp_register_settings() {
     add_settings_field('pfp_tab_item_color', 'Tab Item Color', 'pfp_tab_item_color_input', 'pfp-settings-colors', 'pfp_colors_section');
     add_settings_field('pfp_post_item_heading_color', 'Post Item Heading Color', 'pfp_post_item_heading_color_input', 'pfp-settings-colors', 'pfp_colors_section');
     add_settings_field('pfp_pagination_font_color', 'Pagination Font Color', 'pfp_pagination_font_color_input', 'pfp-settings-colors', 'pfp_colors_section');
-
+    add_settings_field( 'pfp_pagination_active_font_color','Active Pagination Font Color','pfp_pagination_active_font_color_input','pfp-settings-colors', 'pfp_colors_section' );
     add_settings_field('pfp_post_item_text_color', 'Post Item Text Color', 'pfp_post_item_text_color_input', 'pfp-settings-colors', 'pfp_colors_section');
 
  // Layout Register Settings
@@ -471,10 +473,44 @@ register_setting('pfp_settings_group', 'pfp_posts_per_row', 'intval');
 register_setting('pfp_settings_group', 'pfp_tablet_posts_per_row', 'intval'); // New: Tablet posts per row
 register_setting('pfp_settings_group', 'pfp_mobile_posts_per_row', 'intval'); // New: Mobile posts per row
 register_setting('pfp_settings_group', 'pfp_posts_per_page', 'intval');
-register_setting('pfp_settings_group', 'pfp_post_item_img_height', 'intval');
-// Add new settings for tablet and mobile image heights
-register_setting('pfp_settings_group', 'pfp_tablet_image_height', 'intval'); // Tablet image height
-register_setting('pfp_settings_group', 'pfp_mobile_image_height', 'intval'); // Mobile image height
+
+// Register image height settings
+register_setting('pfp_settings_group', 'pfp_desktop_image_height', 'intval');
+register_setting('pfp_settings_group', 'pfp_tablet_image_height', 'intval');
+register_setting('pfp_settings_group', 'pfp_mobile_image_height', 'intval');
+
+// Add a new section for image height settings
+add_settings_section(
+    'pfp_image_height_section',
+    'Image Height',
+    'pfp_image_height_section_text',
+    'pfp-settings-layout'
+);
+
+// Add fields for image height settings
+add_settings_field(
+    'pfp_desktop_image_height',
+    'Desktop Image Height (px)',
+    'pfp_desktop_image_height_input',
+    'pfp-settings-layout',
+    'pfp_image_height_section'
+);
+
+add_settings_field(
+    'pfp_tablet_image_height',
+    'Tablet Image Height (px)',
+    'pfp_tablet_image_height_input',
+    'pfp-settings-layout',
+    'pfp_image_height_section'
+);
+
+add_settings_field(
+    'pfp_mobile_image_height',
+    'Mobile Image Height (px)',
+    'pfp_mobile_image_height_input',
+    'pfp-settings-layout',
+    'pfp_image_height_section'
+);
 
 // Add Layout Section
 add_settings_section(
@@ -526,40 +562,49 @@ add_settings_field(
     'pfp_layout_section'
 );
 
-add_settings_field(
-    'pfp_post_item_img_height',
-    'Post Item Image Height (px)',
-    'pfp_post_item_img_height_input',
-    'pfp-settings-layout',
-    'pfp_layout_section'
-);
 
-// Add fields for tablet and mobile image heights to Layout section
-add_settings_field(
-    'pfp_tablet_image_height',
-    'Tablet Image Height (px)',
-    'pfp_tablet_image_height_input',
-    'pfp-settings-layout',
-    'pfp_layout_section'
-);
 
-add_settings_field(
-    'pfp_mobile_image_height',
-    'Mobile Image Height (px)',
-    'pfp_mobile_image_height_input',
-    'pfp-settings-layout',
-    'pfp_layout_section'
-);
+
+
 }
 
 
 add_action('admin_init', 'pfp_register_settings');
 
-function pfp_pagination_font_color_input() {
-    $color = get_option('pfp_pagination_font_color', '#000000'); // Default to black
-    echo '<input type="text" class="color-picker" name="pfp_pagination_font_color" value="' . esc_attr($color) . '" data-default-color="#000000" />';
+// Callback function for the image height section text
+function pfp_image_height_section_text() {
+    echo '<p>Set the image height for the post grid on desktop, tablet, and mobile views.</p>';
 }
 
+// Callback function for desktop image height input
+function pfp_desktop_image_height_input() {
+    $desktop_image_height = get_option('pfp_desktop_image_height', 200); // Default: 200px
+    echo '<input id="pfp_desktop_image_height" name="pfp_desktop_image_height" type="number" min="50" max="1000" value="' . esc_attr($desktop_image_height) . '" />';
+}
+
+// Callback function for tablet image height input
+function pfp_tablet_image_height_input() {
+    $tablet_image_height = get_option('pfp_tablet_image_height', 150); // Default: 150px
+    echo '<input id="pfp_tablet_image_height" name="pfp_tablet_image_height" type="number" min="50" max="1000" value="' . esc_attr($tablet_image_height) . '" />';
+}
+
+// Callback function for mobile image height input
+function pfp_mobile_image_height_input() {
+    $mobile_image_height = get_option('pfp_mobile_image_height', 100); // Default: 100px
+    echo '<input id="pfp_mobile_image_height" name="pfp_mobile_image_height" type="number" min="50" max="1000" value="' . esc_attr($mobile_image_height) . '" />';
+}
+
+function pfp_pagination_font_color_input() {
+    $color = get_option('pfp_pagination_font_color', '#000000'); // Default to black
+    echo '<input type="text" class="color-picker" name="pfp_pagination_font_color" value="' . esc_attr($color) . '" placeholder="#000000" data-default-color="#000000" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
+}
+
+function pfp_pagination_active_font_color_input() {
+    $color = get_option('pfp_pagination_active_font_color', '#000000'); // Default color is black
+    echo '<input type="text" name="pfp_pagination_active_font_color" value="' . esc_attr($color) . '" class="my-color-field" placeholder="#000000" data-default-color="#000000" />';
+    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
+}
 
 // Function for the new field
 function pfp_custom_tag_label_input() {
@@ -576,7 +621,7 @@ function pfp_subheading_font_color_input() {
 
 // Callback function for the predefined key section text
 function pfp_predefined_key_section_text() {
-    echo '<p>Enter the license key .</p>';
+    echo '<p>Enter the license key.</p>';
 }
 
 // Callback function for the predefined key input field
@@ -660,15 +705,7 @@ function pfp_body_font_family_input() {
     echo '<p class="description">Leave blank to inherit the theme\'s font family.</p>';
 }
 
-function pfp_tablet_image_height_input() {
-    $tablet_image_height = get_option('pfp_tablet_image_height', 150); // Default: 150px
-    echo '<input id="pfp_tablet_image_height" name="pfp_tablet_image_height" type="number" min="50" max="1000" value="' . esc_attr($tablet_image_height) . '" />';
-}
 
-function pfp_mobile_image_height_input() {
-    $mobile_image_height = get_option('pfp_mobile_image_height', 100); // Default: 100px
-    echo '<input id="pfp_mobile_image_height" name="pfp_mobile_image_height" type="number" min="50" max="1000" value="' . esc_attr($mobile_image_height) . '" />';
-}
 
 function pfp_tablet_posts_per_row_input() {
     $tablet_posts_per_row = get_option('pfp_tablet_posts_per_row', 2); // Default: 2 posts per row for tablet
@@ -689,7 +726,7 @@ function pfp_font_sizes_section_text() {
 }
 
 function pfp_colors_section_text() {
-    echo '<p>Customize the background colors for different elements in the Post Picker plugin.</p>';
+    echo '<p>Customize the background colors and font color for different elements in the Post Picker plugin.</p>';
 }
 
 function pfp_layout_section_text() {
@@ -762,10 +799,6 @@ function pfp_posts_per_page_input() {
     echo '<input id="pfp_posts_per_page" name="pfp_posts_per_page" type="number" min="1" max="50" value="' . esc_attr($posts_per_page) . '" />';
 }
 
-function pfp_post_item_img_height_input() {
-    $post_item_img_height = get_option('pfp_post_item_img_height', 200); // Default: 200px
-    echo '<input id="pfp_post_item_img_height" name="pfp_post_item_img_height" type="number" min="50" max="1000" value="' . esc_attr($post_item_img_height) . '" />';
-}
 
 
 // Input field callbacks for new settings
@@ -1181,6 +1214,26 @@ function pfp_display_filtered_posts() {
             font-size: <?php echo esc_attr($desktop_size); ?>px;
         }
     
+   /* Apply image height settings */
+   .post-item img {
+        height: <?php echo esc_attr(get_option('pfp_desktop_image_height', 200)); ?>px;
+        object-fit: cover;
+        width: 100%;
+    }
+
+    @media (max-width: 1024px) {
+        .post-item img {
+            height: <?php echo esc_attr(get_option('pfp_tablet_image_height', 150)); ?>px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .post-item img {
+            height: <?php echo esc_attr(get_option('pfp_mobile_image_height', 100)); ?>px;
+        }
+    }
+
+            
         @media (max-width: 1024px) {
             #selected-category-heading {
                 font-size: <?php echo esc_attr($tablet_size ); ?>px;
@@ -1212,46 +1265,44 @@ function pfp_display_filtered_posts() {
             font-family: <?php echo $body_font_family ? esc_attr($body_font_family) : 'inherit'; ?>;
         }
 
+        .tab-item {
+    font-size: <?php echo esc_attr($tab_font_size); ?>px;
+}
+
+.tab-item.active {
+    font-size: <?php echo esc_attr($tab_font_size); ?>px !important;
+}
+
+@media (max-width: 1024px) {
+    .tab-item {
+        font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px;
+    }
+
+    .tab-item.active {
+        font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px !important;
+    }
+}
+
 @media (max-width: 768px) { /* Tablet View */
     .tab-item {
         font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px;
     }
+
     .tab-item.active {
-        font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px;
+        font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px !important;
     }
-    
 }
 
 @media (max-width: 480px) { /* Mobile View */
-
-    .tab-item.active {
-        font-size: <?php echo esc_attr($mobile_tab_font_size); ?>px;
-    }
     .tab-item {
         font-size: <?php echo esc_attr($mobile_tab_font_size); ?>px;
     }
- 
-    
-}
-/* Desktop view */
-.post-item img {
-        height: <?php echo esc_attr($desktop_image_height); ?>px;
+
+    .tab-item.active {
+        font-size: <?php echo esc_attr($mobile_tab_font_size); ?>px !important;
+    }
 }
 
-        /* Tablet view */
-        @media only screen and (min-width: 768px) and (max-width: 1024px) {
-            .post-item img {
-                height: <?php echo esc_attr($tablet_image_height); ?>px;
-            }
-        }
-
-        /* Mobile view */
-        @media only screen and (max-width: 767px) {
-            .post-item img {
-                height: <?php echo esc_attr($mobile_image_height); ?>px;
-            }
-            
-        }
 </style>
 
 <div class="filter-container" style="background-color: <?php echo esc_attr($filter_container_bg_color); ?>;">
@@ -1337,9 +1388,7 @@ function pfp_display_filtered_posts() {
              @media only screen and (min-width: 768px) and (max-width: 1024px) {
           
          
-            .tab-item {
-                font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px;
-            }
+           
             .post-item h3{
                 font-size: <?php echo esc_attr($tablet_post_title_font_size); ?>px;
             }
@@ -1354,9 +1403,7 @@ function pfp_display_filtered_posts() {
         /* Mobile view */
         @media only screen and (max-width: 767px) {
           
-            li.tab-item {
-                font-size: <?php echo esc_attr($mobile_tab_font_size); ?>px;
-            }
+           
             .post-item h3{
                 font-size: <?php echo esc_attr($mobile_post_title_font_size); ?>px;
             }
@@ -1625,13 +1672,6 @@ h2 {
 }
 .post-item h3 {
     margin: 0 0 10px;
-}
-.post-item img {
-    text-align:center;
-    width: 100%;
-    height: auto;
-    margin-bottom: 10px;
-    object-fit: cover;
 }
 
 
@@ -1960,7 +2000,7 @@ function pfp_get_dynamic_filters() {
         <div class="filter-dropdown">
             <label for="month"><?php echo esc_html($tag_label); ?></label>
             <select id="month">
-                <option value=""><?php echo esc_html__('Select month', 'text-domain'); ?></option>
+            <option value=""><?php echo esc_html__('Select ', 'text-domain') . esc_html($tag_label); ?></option>
                 <?php foreach ($mytags as $tag) { ?>
                     <option value="<?php echo esc_attr($tag->term_id); ?>"><?php echo esc_html($tag->name); ?></option>
                 <?php } ?>
@@ -1974,7 +2014,6 @@ function pfp_get_dynamic_filters() {
 }
 add_action('wp_ajax_pfp_get_dynamic_filters', 'pfp_get_dynamic_filters');
 add_action('wp_ajax_nopriv_pfp_get_dynamic_filters', 'pfp_get_dynamic_filters');
-
 
 
 
@@ -2035,18 +2074,18 @@ function pfp_filter_posts() {
 
 add_action('wp_ajax_pfp_filter_posts', 'pfp_filter_posts');
 add_action('wp_ajax_nopriv_pfp_filter_posts', 'pfp_filter_posts');
+
 function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = '', $available_term = '', $paged = 1) {
     // Get the number of posts per row and posts per page from settings
     $posts_per_row = get_option('pfp_posts_per_row', 4); // Default: 4 posts per row
     $posts_per_page = get_option('pfp_posts_per_page', 16); // Default: 16 posts per page
-    // Fetch image height settings
-    $desktop_image_height = get_option('pfp_post_item_img_height', 200); // Default: 200px
-    $tablet_image_height = get_option('pfp_tablet_image_height', 150); // Default: 150px
-    $mobile_image_height = get_option('pfp_mobile_image_height', 100); // Default: 100px
+    
 
     $post_item_heading_color = get_option('pfp_post_item_heading_color', '#000000'); 
     $post_item_text_color = get_option('pfp_post_item_text_color', '#000000');
     $pagination_font_color = esc_attr(get_option('pfp_pagination_font_color', '#000000')); // Default black
+    $pagination_active_font_color = esc_attr(get_option('pfp_pagination_active_font_color', '#ffffff'));
+
     // Setup the query parameters
     $args = array(
         'post_type'      => 'post',
@@ -2096,28 +2135,9 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
 
     ob_start(); // Start output buffering
 
-    // Add the style tag for responsive image heights
+   
     ?>
-    <style>
-        /* Default desktop image height */
-        .post-item img {
-            height: <?php echo esc_attr($desktop_image_height); ?>px;
-        }
-
-        /* Tablet view */
-        @media only screen and (min-width: 768px) and (max-width: 1024px) {
-            .post-item img {
-                height: <?php echo esc_attr($tablet_image_height); ?>px;
-            }
-        }
-
-        /* Mobile view */
-        @media only screen and (max-width: 767px) {
-            .post-item img {
-                height: <?php echo esc_attr($mobile_image_height); ?>px;
-            }
-        }
-    </style>
+   
     <?php
 
     if ($query->have_posts()) {
@@ -2134,9 +2154,9 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
   <?php the_title(); ?>
 </h3>
 
-<p style="color: <?php echo esc_attr($post_item_text_color); ?>; text-align: center; font-weight: 400;">
-    <?php echo wp_trim_words(get_the_excerpt(), 20); ?>
-</p>
+        <p style="color: <?php echo esc_attr($post_item_text_color); ?>; text-align: center; font-weight: 400;">
+            <?php echo wp_trim_words(get_the_excerpt(), 20); ?>
+        </p>
                     </div>
                 </div>
             </a>
@@ -2173,9 +2193,11 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
             for ($i = $start; $i <= $end; $i++) {
                 $active = $i == $paged ? 'active' : '';
                 $bg_color = $i == $paged ? $pagination_active_bg_color : $pagination_bg_color;
-
+                $font_color = $i == $paged ? $pagination_active_font_color : $pagination_font_color;
+            
                 echo '<a href="#" class="page-link ' . $active . '" data-page="' . $i . '" 
-                style="background-color:' . $bg_color . '; color:' . $pagination_font_color . ';">' . $i . '</a>';            }
+                style="background-color:' . $bg_color . '; color:' . $font_color . ';">' . $i . '</a>';
+            }
 
             // Display ellipsis and last page if needed
             if ($paged < $total_pages - 2) {
@@ -2200,8 +2222,6 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
 
     return ob_get_clean(); // Return the buffered output
 }
-
-
 
 
 // AJAX action hooks
