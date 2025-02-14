@@ -1283,6 +1283,7 @@ function pfp_display_filtered_posts() {
     font-size: <?php echo esc_attr($tab_font_size); ?>px !important;
 }
 
+
 @media (max-width: 1024px) {
     .tab-item {
         font-size: <?php echo esc_attr($tablet_tab_font_size); ?>px;
@@ -1322,6 +1323,8 @@ function pfp_display_filtered_posts() {
     <!-- Tabs for Categories -->
     <?php if ($categories): ?>
         <div class="tabs">
+             <!-- Left Arrow for Mobile -->
+    <div class="tab-arrow left-arrow" onclick="scrollTabs(-1)">&#10094;</div>
             <ul class="tab-list" style="margin:0px;">
                 <?php foreach ($categories as $index => $category): ?>
                     <li data-category-id="<?php echo esc_attr($category->term_id); ?>" 
@@ -1331,6 +1334,8 @@ function pfp_display_filtered_posts() {
                     </li>
                 <?php endforeach; ?>
             </ul>
+             <!-- Right Arrow for Mobile -->
+    <div class="tab-arrow right-arrow" onclick="scrollTabs(1)">&#10095;</div>
         </div>
                 <?php endif; ?>
 
@@ -1354,7 +1359,53 @@ function pfp_display_filtered_posts() {
         <!-- Container to display the filtered posts -->
         <div id="posts-container"></div>
     </div>
-
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tabItems = document.querySelectorAll(".tab-item");
+        const leftArrow = document.querySelector(".tab-arrow.left-arrow");
+        const rightArrow = document.querySelector(".tab-arrow.right-arrow");
+    
+        let activeIndex = Array.from(tabItems).findIndex(tab => tab.classList.contains("active"));
+    
+        function activateTab(index) {
+            if (index >= 0 && index < tabItems.length) {
+                tabItems.forEach(tab => tab.classList.remove("active"));
+                tabItems[index].classList.add("active");
+    
+                // Scroll to the active tab (optional)
+                tabItems[index].scrollIntoView({
+                    behavior: "smooth",
+                    inline: "center"
+                });
+    
+                activeIndex = index;
+    
+                // You can also trigger your category filtering logic here if needed
+                // Example: triggerCategoryChange(tabItems[index].dataset.categoryId);
+            }
+        }
+    
+        if (leftArrow) {
+            leftArrow.addEventListener("click", () => {
+                activateTab(activeIndex - 1);
+            });
+        }
+    
+        if (rightArrow) {
+            rightArrow.addEventListener("click", () => {
+                activateTab(activeIndex + 1);
+            });
+        }
+    
+        // Optional: Add click behavior on tabs to set active index
+        tabItems.forEach((tab, index) => {
+            tab.addEventListener("click", () => {
+                activateTab(index);
+            });
+        });
+    });
+    
+</script>
     <style>
 
         /* admin-styles.css */
@@ -1620,12 +1671,7 @@ h2 {
     margin-bottom: 20px; /* Space below the tabs */
 }
 
-.tab-list {
-    list-style-type: none; /* Remove list styles */
-    padding: 0; /* Remove default padding */
-    display: flex; /* Horizontal layout */
-    justify-content: center; /* Center the tabs */
-}
+/*  */
 
 .tab-item {
     margin: 0 10px; /* Space between tabs */
@@ -1721,11 +1767,11 @@ li.tab-item{
 .tabs {
     margin-bottom: 20px;
 }
-.tab-list {
-    list-style-type: none;
-    padding: 0;
-    display: flex;
-}
+
+
+
+/* Mobile View */
+
 .tab-item {
     margin-right: 15px;
     cursor: pointer;
@@ -1819,17 +1865,13 @@ select#available-posts{
     border-radius: 5px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
-a.page-link {
-    
-}
+
 a.page-link.active {
     color:white;;
 }
 .page-link.active {
-    
     color: #000;
     font-weight: bold;
-    
 }
 
 .ellipsis {
@@ -2164,8 +2206,8 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
                     <div class="post-item">
                         <?php the_post_thumbnail('medium', ['style' => 'border-radius: 8px;']); ?>
                         <h3 style="text-align: center; font-weight: 700; color: <?php echo esc_attr($post_item_heading_color); ?>;">
-  <?php the_title(); ?>
-</h3>
+        <?php the_title(); ?>
+        </h3>
 
         <p style="color: <?php echo esc_attr($post_item_text_color); ?>; text-align: center; font-weight: 400;">
             <?php echo wp_trim_words(get_the_excerpt(), 20); ?>
