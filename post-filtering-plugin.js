@@ -16,5 +16,6 @@ jQuery(document).ready(function ($) {
         let target = '#' + $(this).data('category-id'); // Assuming target ID corresponds to category ID
         $(target).addClass('active');
     });
+
     
 });

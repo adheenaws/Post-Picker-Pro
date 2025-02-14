@@ -115,11 +115,7 @@ h2 {
     border-color: #2c3e50; /* Dark border on focus */
     outline: none; /* Remove default outline */
 }
-.post-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
+
 .post-item {
     border: 1px solid #ddd;
     padding: 15px;
@@ -131,7 +127,7 @@ h2 {
 }
 .post-item img {
     width: 100%;
-    height: auto;
+  
     margin-bottom: 10px;
 }
 
@@ -160,7 +156,7 @@ h3#selected-category-heading{
 font-weight: 500;
 line-height: 74.4px;
 text-align: center;
-font-family: 'archeron-pro' !important;
+
 }
 
 li.tab-item{
@@ -183,18 +179,18 @@ li.tab-item{
     padding: 10px 15px;
     border-bottom: 2px solid transparent; /* Set transparent border */
     color: #08303D59;
-    font-family: 'archeron-pro' !important;
+    
     font-size: 14px;
 }
 .tab-item.active {
     border-bottom: 1px solid #0C2E3A; /* Underline color for active tab */
     border-radius:0px ;
     color: #0C2E3A;
-    font-family: 'archeron-pro' !important;
+   
     font-size: 14px;
 }
 select#available-posts,select#user-state ,select#month {
-    font-family: 'archeron-pro' !important;
+  
     border: none;
     font-size:14px;
     font-weight: 400;
@@ -211,14 +207,10 @@ select#available-posts,select#user-state ,select#month {
     display: inline-block; /* Makes it behave like an inline element */
 }
 
-.post-grid {
-    display: grid;
-    /* grid-template-columns: repeat(4, 1fr); /* 4 columns */
-    gap: 20px; /* Space between posts */
-}
+
 
 .post-item {
-width:280px;
+
 height: 100%; /* Make sure the items take full height */
 padding: 10px;
 gap: 15px;
@@ -258,18 +250,10 @@ select#available-posts{
     .filter-container{
         padding: 0px;
     }
-    .post-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr); /* 4 columns */
-        gap: 10px; /* Space between posts */
-    }
+  
 }
 
-@media only screen and (max-width: 425px) {
-    .post-grid {
-        grid-template-columns: 1fr; /* 1 column per row */
-    }
-}
+
 
 @media only screen and (min-width: 768px) and (max-width: 1024px) 
    {
@@ -299,7 +283,7 @@ select#available-posts{
             border: 0px;
     border-bottom: 1px solid #0C2E3A;
     color: #08303D;
-    font-family: 'archeron-pro' !important;
+    
         }
         
         /* Style for filter options to display in a single line */
@@ -319,4 +303,98 @@ select#available-posts{
             width:50%
         }
     }
+    .tab-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        justify-content: flex-start; /* Align tabs to the start */
+    }
+    
+    .tab-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        color: #08303D59;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+    
+    .tab-item.active {
+        border-bottom: 1px solid #0C2E3A;
+        color: #0C2E3A;
+        font-weight: bold;
+    }
         
+    /* Mobile View */
+/* Mobile View */
+@media (max-width: 767px) {
+    .tabs {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .tab-list {
+        display: flex;
+        overflow-x: auto; /* Enable horizontal scrolling */
+        white-space: nowrap; /* Prevent wrapping */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on touch devices */
+        scrollbar-width: none; /* Hide scrollbar in Firefox */
+        -ms-overflow-style: none; /* Hide scrollbar in IE/Edge */
+        flex: 1; /* Take up remaining space */
+        margin: 0 30px; /* Space for arrows */
+    }
+
+    .tab-list::-webkit-scrollbar {
+        display: none; /* Hide scrollbar in WebKit browsers */
+    }
+
+    .tab-item {
+        flex: 0 0 auto; /* Prevent tabs from stretching */
+        margin-right: 10px; /* Space between tabs */
+        padding: 10px 15px; /* Padding for each tab */
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        color: #08303D59;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .tab-item.active {
+        border-bottom: 1px solid #0C2E3A;
+        color: #0C2E3A;
+        font-weight: bold;
+    }
+
+    .tab-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 20px;
+        user-select: none;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .tab-arrow.left-arrow {
+        left: 0; /* Position left arrow */
+    }
+
+    .tab-arrow.right-arrow {
+        right: 0; /* Position right arrow */
+    }
+}
+
+@media (min-width: 768px) {
+    .tab-arrow {
+        display: none; /* Hide arrows on desktop */
+    }
+}
