@@ -65,6 +65,8 @@ function pfp_render_settings_page() {
                     <?php
                     settings_fields('pfp_settings_group'); // Settings group
 
+                    
+
                     // General Settings Tab
                     echo '<div id="tab-general" class="tab-content active">';
                     do_settings_sections('pfp-settings-general'); // General settings section
@@ -267,6 +269,8 @@ function pfp_register_settings() {
   
     // Register the predefined key setting
     register_setting('pfp_settings_group', 'pfp_predefined_key', 'sanitize_text_field');
+    // Register category selection setting
+    register_setting('pfp_settings_group', 'pfp_selected_categories', 'array');
 
     // Add a new section for the predefined key
     add_settings_section(
@@ -284,7 +288,22 @@ function pfp_register_settings() {
         'pfp-settings-general',
         'pfp_predefined_key_section'
     );
+  // Add a new section for category selection
+  add_settings_section(
+    'pfp_category_selection_section',
+    'Category Selection',
+    'pfp_category_selection_section_text',
+    'pfp-settings-general'
+);
 
+// Add field for category selection
+add_settings_field(
+    'pfp_selected_categories',
+    'Select Categories to Display',
+    'pfp_selected_categories_input',
+    'pfp-settings-general',
+    'pfp_category_selection_section'
+);
    
     register_setting('pfp_settings_group', 'pfp_category_title_font_size', 'sanitize_text_field');
     register_setting('pfp_settings_group', 'pfp_tablet_category_title_font_size', 'sanitize_text_field');
@@ -428,9 +447,9 @@ function pfp_register_settings() {
     );
 
     //add_settings_field('pfp_taxonomy_name', 'Tag1', 'pfp_taxonomy_name_input', 'pfp-settings-general', 'pfp_general_section');
-    add_settings_field('pfp_tag_label', 'General Tag Label', 'pfp_tag_label_input', 'pfp-settings-general', 'pfp_general_section');
-    add_settings_field('pfp_produce_type_label', 'Term Label', 'pfp_produce_type_label_input', 'pfp-settings-general', 'pfp_general_section');
-    add_settings_field('pfp_custom_tag_label', 'Custom Tag Label', 'pfp_custom_tag_label_input', 'pfp-settings-general', 'pfp_general_section'); // New Field
+    add_settings_field('pfp_tag_label', 'Default Tag Label', 'pfp_tag_label_input', 'pfp-settings-general', 'pfp_general_section');
+    add_settings_field('pfp_produce_type_label', 'Tag Label 1', 'pfp_produce_type_label_input', 'pfp-settings-general', 'pfp_general_section');
+    add_settings_field('pfp_custom_tag_label', 'Tag Label 2', 'pfp_custom_tag_label_input', 'pfp-settings-general', 'pfp_general_section'); // New Field
 
     // Colors Section
     register_setting('pfp_settings_group', 'pfp_pp_container_bg_color', 'sanitize_hex_color');
@@ -570,6 +589,20 @@ add_settings_field(
 
 
 add_action('admin_init', 'pfp_register_settings');
+
+function pfp_category_selection_section_text() {
+    echo '<p>Select the categories you want to display in the Post Picker plugin.</p>';
+}
+
+function pfp_selected_categories_input() {
+    $selected_categories = get_option('pfp_selected_categories', array());
+    $categories = get_categories(array('hide_empty' => false));
+
+    foreach ($categories as $category) {
+        $checked = in_array($category->term_id, $selected_categories) ? 'checked' : '';
+        echo '<label><input type="checkbox" name="pfp_selected_categories[]" value="' . esc_attr($category->term_id) . '" ' . $checked . '> ' . esc_html($category->name) . '</label><br>';
+    }
+}
 
 // Callback function for the image height section text
 function pfp_image_height_section_text() {
@@ -1185,11 +1218,15 @@ function pfp_display_filtered_posts() {
     // Fetch the custom "Produce Type" label from settings
     $produce_type_label = get_option('pfp_produce_type_label', 'Produce Type'); // Default: 'Produce Type'
 
+    // Fetch selected categories from settings
+    $selected_categories = get_option('pfp_selected_categories', array());
+
     // Fetch categories that have posts in reverse alphabetical order
     $categories = get_categories(array(
         'hide_empty' => true, // Only show categories that have posts
         'orderby' => 'name',  // Order by name
         'order' => 'DESC',     // Descending order
+        'include' => $selected_categories, // Only include selected categories
     ));
 
     ?>
@@ -1959,84 +1996,76 @@ a.page-link.active {
 }
 add_shortcode('pfp_display_filtered_posts', 'pfp_display_filtered_posts');
 
-// New AJAX handler to get available terms based on category
 function pfp_get_available_terms() {
     $category_id = intval($_POST['category_id']);
-    
-    // Fetch the custom "Produce Type" label from settings
-    $produce_type_label = get_option('pfp_produce_type_label', 'Produce Type'); // Default: 'Produce Type'
+    $produce_type_label = get_option('pfp_produce_type_label', 'Produce Type');
 
-    // Fetch terms from your custom taxonomy (replace 'term' with your actual taxonomy name if different)
-    $terms = get_terms(array(
-        'taxonomy'   => 'term',
-        'hide_empty' => false,
+    // Get all posts in the selected category
+    $posts_in_category = get_posts(array(
+        'category'    => $category_id,
+        'numberposts' => -1,
+        'fields'      => 'ids',
     ));
-    
-    // Check if terms were found
+
+    if (empty($posts_in_category)) {
+        echo '<option value="">No ' . esc_html(strtolower($produce_type_label)) . ' available</option>';
+        wp_die();
+    }
+
+    // Fetch terms associated with posts in this category
+    $terms = wp_get_object_terms($posts_in_category, 'term', array('orderby' => 'name', 'hide_empty' => true));
+
     if (!empty($terms)) {
         foreach ($terms as $term) {
-            // Output each term as an option in the dropdown
             echo '<option value="' . esc_attr($term->term_id) . '">' . esc_html($term->name) . '</option>';
         }
     } else {
-        // If no terms found, output a placeholder option
         echo '<option value="">No ' . esc_html(strtolower($produce_type_label)) . ' available</option>';
     }
 
-    wp_die(); // Required to terminate immediately and return a proper response
+    wp_die();
 }
+
 add_action('wp_ajax_pfp_get_available_terms', 'pfp_get_available_terms');
 add_action('wp_ajax_nopriv_pfp_get_available_terms', 'pfp_get_available_terms');
 
 function pfp_get_dynamic_filters() {
     $category_id = intval($_POST['category_id']);
 
-    // Fetch the custom tag label value from settings
-    $custom_tag_label = get_option('pfp_custom_tag_label', 'Custom Tag'); // Default: 'User State'
-     // Fetch the custom tag label value from settings
-     $tag_label = get_option('pfp_tag_label', 'Tag Label'); // Default: 'User State'
+    $custom_tag_label = get_option('pfp_custom_tag_label', 'User State');
+    $tag_label = get_option('pfp_tag_label', 'Month');
 
-
-    // Fetch states associated with the selected category
-    $states = get_terms(array(
-        'taxonomy'   => 'custom_tag',
-        'hide_empty' => true,
-        'object_ids' => get_objects_in_term($category_id, 'category'),
+    // Get all posts in the selected category
+    $posts_in_category = get_posts(array(
+        'category'    => $category_id,
+        'numberposts' => -1,
+        'fields'      => 'ids',
     ));
 
-    // Fetch states associated with the selected category
-    $mystates = get_terms(array(
-        'taxonomy'   => 'custom_tag',
-        'hide_empty' => false,
-    ));
+    if (empty($posts_in_category)) {
+        wp_die(); // No posts in this category, exit early.
+    }
 
-    // Fetch tags associated with the selected category
-    $tags = get_tags(array(
-        'hide_empty' => true,
-        'object_ids' => get_objects_in_term($category_id, 'category'),
-    ));
+    // Fetch states (custom_tag) associated with posts in this category
+    $states = wp_get_object_terms($posts_in_category, 'custom_tag', array('orderby' => 'name', 'hide_empty' => true));
 
-    // Fetch tags associated with the selected category
-    $mytags = get_terms(array(
-        'taxonomy' => 'post_tag',
-        'hide_empty' => false,
-        'orderby' => 'term_id',
-    ));
-    
-    ob_start(); // Start output buffering
+    // Fetch months (post_tag) associated with posts in this category
+    $tags = wp_get_object_terms($posts_in_category, 'post_tag', array('orderby' => 'name', 'hide_empty' => true));
+
+    ob_start();
 
     // Vertical Separator before the custom tag dropdown
     if ($states || $tags) { ?>
         <div class="vertical-separator"></div>
     <?php } ?>
 
-    <!-- Dropdown for Custom Tag Label -->
-    <?php if ($states) { ?>
+    <!-- Dropdown for User State -->
+    <?php if (!empty($states)) { ?>
         <div class="filter-dropdown">
             <label for="user-state"><?php echo esc_html($custom_tag_label); ?></label>
             <select id="user-state">
                 <option value=""><?php echo esc_html__('Select ', 'text-domain') . esc_html($custom_tag_label); ?></option>
-                <?php foreach ($mystates as $state) { ?>
+                <?php foreach ($states as $state) { ?>
                     <option value="<?php echo esc_attr($state->term_id); ?>"><?php echo esc_html($state->name); ?></option>
                 <?php } ?>
             </select>
@@ -2048,25 +2077,23 @@ function pfp_get_dynamic_filters() {
         <div class="vertical-separator"></div>
     <?php } ?>
 
-    
-
     <!-- Dropdown for Month -->
-    <?php if ($tags) { ?>
+    <?php if (!empty($tags)) { ?>
         <div class="filter-dropdown">
             <label for="month"><?php echo esc_html($tag_label); ?></label>
             <select id="month">
-            <option value=""><?php echo esc_html__('Select ', 'text-domain') . esc_html($tag_label); ?></option>
-                <?php foreach ($mytags as $tag) { ?>
+                <option value=""><?php echo esc_html__('Select ', 'text-domain') . esc_html($tag_label); ?></option>
+                <?php foreach ($tags as $tag) { ?>
                     <option value="<?php echo esc_attr($tag->term_id); ?>"><?php echo esc_html($tag->name); ?></option>
                 <?php } ?>
             </select>
         </div>
-    <?php } ?>
+    <?php }
 
-    <?php
-    echo ob_get_clean(); // Return the buffered output
-    wp_die(); // Properly terminate AJAX request
+    echo ob_get_clean();
+    wp_die();
 }
+
 add_action('wp_ajax_pfp_get_dynamic_filters', 'pfp_get_dynamic_filters');
 add_action('wp_ajax_nopriv_pfp_get_dynamic_filters', 'pfp_get_dynamic_filters');
 
@@ -2117,14 +2144,26 @@ function pfp_filter_posts() {
     error_log("Available Term: $available_term");
     error_log("Page: $paged");
 
+    $selected_categories = get_option('pfp_selected_categories', array());
+
+    if (!empty($selected_categories)) {
+        if (!in_array($category_id, $selected_categories)) {
+            echo '<p>No posts found.</p>';
+            wp_die();
+        }
+    }
+
     $filtered_posts_html = pfp_get_filtered_posts($category_id, $user_state, $month, $available_term, $paged);
 
     if (!empty($filtered_posts_html)) {
         echo $filtered_posts_html;
+    } else {
+        echo '<p>No posts found.</p>';
     }
 
     wp_die();
 }
+
 
 
 add_action('wp_ajax_pfp_filter_posts', 'pfp_filter_posts');
