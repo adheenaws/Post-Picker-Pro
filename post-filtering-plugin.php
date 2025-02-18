@@ -46,10 +46,8 @@ add_action('admin_menu', 'pfp_add_settings_pages');
 // Render the settings page with tabs
 function pfp_render_settings_page() {
     ?>
-    <div class="wrap">
+        <div class="wrap">
         <h1>Post Picker Settings</h1>
-
-        
 
         <div class="pfp-settings-container">
             <!-- Left Side: Settings Form -->
@@ -61,11 +59,9 @@ function pfp_render_settings_page() {
                     <a href="#tab-layout" class="nav-tab">Layout</a>
                 </h2>
 
-                <form method="post" action="options.php">
+                <form method="post" action="options.php" id="pfp-settings-form">
                     <?php
                     settings_fields('pfp_settings_group'); // Settings group
-
-                    
 
                     // General Settings Tab
                     echo '<div id="tab-general" class="tab-content active">';
@@ -87,9 +83,10 @@ function pfp_render_settings_page() {
                     do_settings_sections('pfp-settings-layout'); // Layout section
                     echo '</div>';
 
-                    submit_button();
+                    submit_button('Save Settings');
                     ?>
                 </form>
+                <button id="pfp-reset-settings" class="button button-secondary">Reset Settings</button>
             </div>
         </div>
     </div>
@@ -107,6 +104,28 @@ function pfp_render_settings_page() {
 
             // Show the first tab by default
             $('.nav-tab-wrapper a:first').click();
+
+            // Handle reset button click
+            $('#pfp-reset-settings').click(function(e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to reset all settings to default?')) {
+                    $.ajax({
+                        url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                        type: 'POST',
+                        data: {
+                            action: 'pfp_reset_settings'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Settings have been reset to default.');
+                                location.reload(); // Reload the page to reflect the changes
+                            } else {
+                                alert('Failed to reset settings.');
+                            }
+                        }
+                    });
+                }
+            });
         });
     </script>
 
@@ -269,8 +288,6 @@ function pfp_register_settings() {
   
     // Register the predefined key setting
     register_setting('pfp_settings_group', 'pfp_predefined_key', 'sanitize_text_field');
-    // Register category selection setting
-    register_setting('pfp_settings_group', 'pfp_selected_categories', 'array');
 
     // Add a new section for the predefined key
     add_settings_section(
@@ -288,22 +305,7 @@ function pfp_register_settings() {
         'pfp-settings-general',
         'pfp_predefined_key_section'
     );
-  // Add a new section for category selection
-  add_settings_section(
-    'pfp_category_selection_section',
-    'Category Selection',
-    'pfp_category_selection_section_text',
-    'pfp-settings-general'
-);
 
-// Add field for category selection
-add_settings_field(
-    'pfp_selected_categories',
-    'Select Categories to Display',
-    'pfp_selected_categories_input',
-    'pfp-settings-general',
-    'pfp_category_selection_section'
-);
    
     register_setting('pfp_settings_group', 'pfp_category_title_font_size', 'sanitize_text_field');
     register_setting('pfp_settings_group', 'pfp_tablet_category_title_font_size', 'sanitize_text_field');
@@ -498,6 +500,53 @@ register_setting('pfp_settings_group', 'pfp_desktop_image_height', 'intval');
 register_setting('pfp_settings_group', 'pfp_tablet_image_height', 'intval');
 register_setting('pfp_settings_group', 'pfp_mobile_image_height', 'intval');
 
+// Register border radius settings
+register_setting('pfp_settings_group', 'pfp_pp_container_border_radius', 'intval');
+register_setting('pfp_settings_group', 'pfp_filter_container_border_radius', 'intval');
+register_setting('pfp_settings_group', 'pfp_post_item_border_radius', 'intval');
+register_setting('pfp_settings_group', 'pfp_post_item_img_border_radius', 'intval');
+
+// Add a new section for border radius
+add_settings_section(
+    'pfp_border_radius_section',
+    'Border Radius',
+    'pfp_border_radius_section_text',
+    'pfp-settings-layout'
+);
+
+// Add fields for border radius
+add_settings_field(
+    'pfp_pp_container_border_radius',
+    'Outer Container Border Radius (px)',
+    'pfp_pp_container_border_radius_input',
+    'pfp-settings-layout',
+    'pfp_border_radius_section'
+);
+
+add_settings_field(
+    'pfp_filter_container_border_radius',
+    'Filter Container Border Radius (px)',
+    'pfp_filter_container_border_radius_input',
+    'pfp-settings-layout',
+    'pfp_border_radius_section'
+);
+
+add_settings_field(
+    'pfp_post_item_border_radius',
+    'Post Item Border Radius (px)',
+    'pfp_post_item_border_radius_input',
+    'pfp-settings-layout',
+    'pfp_border_radius_section'
+);
+
+add_settings_field(
+    'pfp_post_item_img_border_radius',
+    'Post Item Image Border Radius (px)',
+    'pfp_post_item_img_border_radius_input',
+    'pfp-settings-layout',
+    'pfp_border_radius_section'
+);
+
 // Add a new section for image height settings
 add_settings_section(
     'pfp_image_height_section',
@@ -590,19 +639,30 @@ add_settings_field(
 
 add_action('admin_init', 'pfp_register_settings');
 
-function pfp_category_selection_section_text() {
-    echo '<p>Select the categories you want to display in the Post Picker plugin.</p>';
+function pfp_border_radius_section_text() {
+    echo '<p>Set the border radius for different elements in the Post Picker plugin.</p>';
 }
 
-function pfp_selected_categories_input() {
-    $selected_categories = get_option('pfp_selected_categories', array());
-    $categories = get_categories(array('hide_empty' => false));
-
-    foreach ($categories as $category) {
-        $checked = in_array($category->term_id, $selected_categories) ? 'checked' : '';
-        echo '<label><input type="checkbox" name="pfp_selected_categories[]" value="' . esc_attr($category->term_id) . '" ' . $checked . '> ' . esc_html($category->name) . '</label><br>';
-    }
+function pfp_pp_container_border_radius_input() {
+    $value = get_option('pfp_pp_container_border_radius', 0);
+    echo '<input id="pfp_pp_container_border_radius" name="pfp_pp_container_border_radius" type="number" min="0" max="100" value="' . esc_attr($value) . '" />';
 }
+
+function pfp_filter_container_border_radius_input() {
+    $value = get_option('pfp_filter_container_border_radius', 0);
+    echo '<input id="pfp_filter_container_border_radius" name="pfp_filter_container_border_radius" type="number" min="0" max="100" value="' . esc_attr($value) . '" />';
+}
+
+function pfp_post_item_border_radius_input() {
+    $value = get_option('pfp_post_item_border_radius', 0);
+    echo '<input id="pfp_post_item_border_radius" name="pfp_post_item_border_radius" type="number" min="0" max="100" value="' . esc_attr($value) . '" />';
+}
+
+function pfp_post_item_img_border_radius_input() {
+    $value = get_option('pfp_post_item_img_border_radius', 0);
+    echo '<input id="pfp_post_item_img_border_radius" name="pfp_post_item_img_border_radius" type="number" min="0" max="100" value="' . esc_attr($value) . '" />';
+}
+
 
 // Callback function for the image height section text
 function pfp_image_height_section_text() {
@@ -627,17 +687,7 @@ function pfp_mobile_image_height_input() {
     echo '<input id="pfp_mobile_image_height" name="pfp_mobile_image_height" type="number" min="50" max="1000" value="' . esc_attr($mobile_image_height) . '" />';
 }
 
-function pfp_pagination_font_color_input() {
-    $color = get_option('pfp_pagination_font_color', '#000000'); // Default to black
-    echo '<input type="text" class="color-picker" name="pfp_pagination_font_color" value="' . esc_attr($color) . '" placeholder="#000000" data-default-color="#000000" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
 
-function pfp_pagination_active_font_color_input() {
-    $color = get_option('pfp_pagination_active_font_color', '#000000'); // Default color is black
-    echo '<input type="text" name="pfp_pagination_active_font_color" value="' . esc_attr($color) . '" class="my-color-field" placeholder="#000000" data-default-color="#000000" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
 
 // Function for the new field
 function pfp_custom_tag_label_input() {
@@ -645,11 +695,7 @@ function pfp_custom_tag_label_input() {
     echo '<input id="pfp_custom_tag_label" name="pfp_custom_tag_label" type="text" value="' . esc_attr($custom_tag_label) . '" />';
 }
 
-function pfp_subheading_font_color_input() {
-    $subheading_color = get_option('pfp_subheading_font_color', '#000000'); // Default color is black
-    echo '<input type="text" name="pfp_subheading_font_color" value="' . esc_attr($subheading_color) . '" class="color-picker" placeholder="#000000" data-default-color="#000000" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($subheading_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
+
 
 
 // Callback function for the predefined key section text
@@ -713,17 +759,9 @@ function pfp_font_family_section_text() {
     echo '<p>Adjust the font family for the headings and body text.</p>';
 }
 
-function pfp_pagination_bg_color_input() {
-    $color = get_option('pfp_pagination_bg_color', '#FFFFFF'); // Default color is white
-    echo '<input type="text" name="pfp_pagination_bg_color" value="' . esc_attr($color) . '" class="color-picker" placeholder="#FFFFFF" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
 
-function pfp_pagination_active_bg_color_input() {
-    $color = get_option('pfp_pagination_active_bg_color', '#FFFFFF'); // Default color is white
-    echo '<input type="text" name="pfp_pagination_active_bg_color" value="' . esc_attr($color) . '" class="color-picker" placeholder="#FFFFFF" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
+
+
 
 
 function pfp_heading_font_family_input() {
@@ -804,23 +842,7 @@ function pfp_post_excerpt_font_size_input() {
     echo '<input id="pfp_post_excerpt_font_size" name="pfp_post_excerpt_font_size" type="text" value="' . esc_attr($post_excerpt_font_size) . '" />';
 }
 
-function pfp_pp_container_bg_color_input() {
-    $pp_container_bg_color = get_option('pfp_pp_container_bg_color', '#FFFFFF'); // Default: White
-    echo '<input id="pfp_pp_container_bg_color" name="pfp_pp_container_bg_color" type="text" value="' . esc_attr($pp_container_bg_color) . '" class="pfp-color-field" placeholder="#FFFFFF" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($pp_container_bg_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
 
-function pfp_filter_container_bg_color_input() {
-    $filter_container_bg_color = get_option('pfp_filter_container_bg_color', '#FFFFFF'); // Default: White
-    echo '<input id="pfp_filter_container_bg_color" name="pfp_filter_container_bg_color" type="text" value="' . esc_attr($filter_container_bg_color) . '" class="pfp-color-field" placeholder="#FFFFFF" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($filter_container_bg_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
-
-function pfp_post_item_bg_color_input() {
-    $post_item_bg_color = get_option('pfp_post_item_bg_color', '#FFFFFF'); // Default: White
-    echo '<input id="pfp_post_item_bg_color" name="pfp_post_item_bg_color" type="text" value="' . esc_attr($post_item_bg_color) . '" class="pfp-color-field" placeholder="#FFFFFF" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($post_item_bg_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
 
 function pfp_posts_per_row_input() {
     $posts_per_row = get_option('pfp_posts_per_row', 4); // Default: 4 posts per row
@@ -865,43 +887,161 @@ function pfp_mobile_post_excerpt_font_size_input() {
     echo '<input id="pfp_mobile_post_excerpt_font_size" name="pfp_mobile_post_excerpt_font_size" type="text" value="' . esc_attr($mobile_post_excerpt_font_size) . '" />';
 }
 
-function pfp_selected_category_heading_color_input() {
-    $selected_category_heading_color = get_option('pfp_selected_category_heading_color', '#000000'); // Default: Black
-    echo '<input type="text" id="pfp_selected_category_heading_color" name="pfp_selected_category_heading_color" value="' . esc_attr($selected_category_heading_color) . '" class="color-picker" placeholder="#000000" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($selected_category_heading_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
+
+
+function pfp_custom_styles() {
+    $pp_container_border_radius = get_option('pfp_pp_container_border_radius', 0);
+    $filter_container_border_radius = get_option('pfp_filter_container_border_radius', 0);
+    $post_item_border_radius = get_option('pfp_post_item_border_radius', 0);
+    $post_item_img_border_radius = get_option('pfp_post_item_img_border_radius', 0);
+
+    echo '<style>
+        .pp-container {
+            border-radius: ' . esc_attr($pp_container_border_radius) . 'px;
+        }
+        .filter-container {
+            border-radius: ' . esc_attr($filter_container_border_radius) . 'px;
+        }
+        .post-item {
+            border-radius: ' . esc_attr($post_item_border_radius) . 'px;
+        }
+        .post-item img {
+            border-radius: ' . esc_attr($post_item_img_border_radius) . 'px;
+        }
+    </style>';
 }
-
-function pfp_tab_item_color_input() {
-    $tab_item_color = get_option('pfp_tab_item_color', '#000000'); // Default: Black
-    echo '<input type="text" id="pfp_tab_item_color" name="pfp_tab_item_color" value="' . esc_attr($tab_item_color) . '" class="color-picker" placeholder="#000000" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($tab_item_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
-
-function pfp_post_item_heading_color_input() {
-    $post_item_heading_color = get_option('pfp_post_item_heading_color', '#000000'); // Default: Black
-    echo '<input type="text" id="pfp_post_item_heading_color" name="pfp_post_item_heading_color" value="' . esc_attr($post_item_heading_color) . '" class="color-picker" placeholder="#000000" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($post_item_heading_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
-
-function pfp_post_item_text_color_input() {
-    $post_item_text_color = get_option('pfp_post_item_text_color', '#000000'); // Default: Black
-    echo '<input type="text" id="pfp_post_item_text_color" name="pfp_post_item_text_color" value="' . esc_attr($post_item_text_color) . '" class="color-picker" placeholder="#000000" />';
-    echo '<span style="display: inline-block; width: 20px; height: 20px; background-color: ' . esc_attr($post_item_text_color) . '; border: 1px solid #ccc; margin-left: 10px;"></span>';
-}
+add_action('wp_head', 'pfp_custom_styles');
 
 
-
-
-function pfp_enqueue_color_picker($hook) {
-    // Only load on the plugin's settings page
-    if ($hook === 'toplevel_page_pfp-settings') {
-        wp_enqueue_style('wp-color-picker');
-        wp_enqueue_script('wp-color-picker');
-        wp_enqueue_script('pfp-color-picker-init', plugin_dir_url(__FILE__) . 'pfp-color-picker.js', array('wp-color-picker'), null, true);
-    }
+function pfp_enqueue_color_picker($hook_suffix) {
+    wp_enqueue_style('wp-color-picker');
+    wp_enqueue_script('wp-color-picker');
 }
 add_action('admin_enqueue_scripts', 'pfp_enqueue_color_picker');
 
+function pfp_color_picker_input($option_name, $default_color = '#000000') {
+    $color = get_option($option_name, $default_color);
+    ?>
+    <input type="text" name="<?php echo esc_attr($option_name); ?>" value="<?php echo esc_attr($color); ?>" class="pfp-color-picker" data-default-color="<?php echo esc_attr($default_color); ?>" />
+    <!-- <span class="pfp-color-preview" style="display: inline-block; width: 20px; height: 20px; background-color: <?php echo esc_attr($color); ?>; border: 1px solid #ccc; margin-left: 10px;"></span> -->
+    <script>
+        jQuery(document).ready(function($) {
+            $('input[name="<?php echo esc_js($option_name); ?>"]').wpColorPicker({
+                change: function(event, ui) {
+                    $(this).next('.pfp-color-preview').css('background-color', ui.color.toString());
+                },
+                clear: function() {
+                    $(this).next('.pfp-color-preview').css('background-color', '');
+                }
+            });
+        });
+    </script>
+    <?php
+}
+
+function pfp_subheading_font_color_input() {
+    pfp_color_picker_input('pfp_subheading_font_color', '#000000');
+}
+
+function pfp_pagination_font_color_input() {
+    pfp_color_picker_input('pfp_pagination_font_color', '#000000');
+}
+
+function pfp_pagination_active_font_color_input() {
+    pfp_color_picker_input('pfp_pagination_active_font_color', '#000000');
+}
+
+function pfp_pagination_bg_color_input() {
+    pfp_color_picker_input('pfp_pagination_bg_color', '#FFFFFF');
+}
+
+function pfp_pagination_active_bg_color_input() {
+    pfp_color_picker_input('pfp_pagination_active_bg_color', '#FFFFFF');
+}
+
+function pfp_pp_container_bg_color_input() {
+    pfp_color_picker_input('pfp_pp_container_bg_color', '#FFFFFF');
+}
+
+function pfp_filter_container_bg_color_input() {
+    pfp_color_picker_input('pfp_filter_container_bg_color', '#FFFFFF');
+}
+
+function pfp_post_item_bg_color_input() {
+    pfp_color_picker_input('pfp_post_item_bg_color', '#FFFFFF');
+}
+
+function pfp_selected_category_heading_color_input() {
+    pfp_color_picker_input('pfp_selected_category_heading_color', '#000000');
+}
+
+function pfp_tab_item_color_input() {
+    pfp_color_picker_input('pfp_tab_item_color', '#000000');
+}
+
+function pfp_post_item_heading_color_input() {
+    pfp_color_picker_input('pfp_post_item_heading_color', '#000000');
+}
+
+function pfp_post_item_text_color_input() {
+    pfp_color_picker_input('pfp_post_item_text_color', '#000000');
+}
+
+function pfp_reset_settings() {
+    // Define default values for all settings
+    $defaults = array(
+        'pfp_predefined_key' => '',
+        'pfp_selected_categories' => array(),
+        'pfp_category_title_font_size' => '20',
+        'pfp_tablet_category_title_font_size' => '18',
+        'pfp_mobile_category_title_font_size' => '16',
+        'pfp_tab_font_size' => '14',
+        'pfp_tablet_tab_font_size' => '12',
+        'pfp_mobile_tab_font_size' => '10',
+        'pfp_post_title_font_size' => '24',
+        'pfp_tablet_post_title_font_size' => '20',
+        'pfp_mobile_post_title_font_size' => '18',
+        'pfp_post_excerpt_font_size' => '14',
+        'pfp_tablet_post_excerpt_font_size' => '12',
+        'pfp_mobile_post_excerpt_font_size' => '10',
+        'pfp_pp_container_border_radius' => '0',
+        'pfp_filter_container_border_radius' => '0',
+        'pfp_post_item_border_radius' => '0',
+        'pfp_post_item_img_border_radius' => '0',
+        'pfp_pp_container_bg_color' => '#FFFFFF',
+        'pfp_filter_container_bg_color' => '#FFFFFF',
+        'pfp_post_item_bg_color' => '#FFFFFF',
+        'pfp_pagination_bg_color' => '#FFFFFF',
+        'pfp_pagination_active_bg_color' => '#000000',
+        'pfp_selected_category_heading_color' => '#000000',
+        'pfp_tab_item_color' => '#000000',
+        'pfp_post_item_heading_color' => '#000000',
+        'pfp_post_item_text_color' => '#000000',
+        'pfp_subheading_font_color' => '#000000',
+        'pfp_pagination_font_color' => '#000000',
+        'pfp_pagination_active_font_color' => '#FFFFFF',
+        'pfp_posts_per_row' => '4',
+        'pfp_tablet_posts_per_row' => '2',
+        'pfp_mobile_posts_per_row' => '1',
+        'pfp_posts_per_page' => '16',
+        'pfp_desktop_image_height' => '200',
+        'pfp_tablet_image_height' => '150',
+        'pfp_mobile_image_height' => '100',
+        'pfp_heading_font_family' => '',
+        'pfp_body_font_family' => '',
+        'pfp_tag_label' => 'Month',
+        'pfp_produce_type_label' => 'Produce Type',
+        'pfp_custom_tag_label' => 'Custom Tag',
+    );
+
+    // Reset each setting to its default value
+    foreach ($defaults as $key => $value) {
+        update_option($key, $value);
+    }
+
+    wp_send_json_success();
+}
+add_action('wp_ajax_pfp_reset_settings', 'pfp_reset_settings');
 
 // Create the 'State' taxonomy
 function create_state_taxonomy() {
@@ -1218,15 +1358,11 @@ function pfp_display_filtered_posts() {
     // Fetch the custom "Produce Type" label from settings
     $produce_type_label = get_option('pfp_produce_type_label', 'Produce Type'); // Default: 'Produce Type'
 
-    // Fetch selected categories from settings
-    $selected_categories = get_option('pfp_selected_categories', array());
-
     // Fetch categories that have posts in reverse alphabetical order
     $categories = get_categories(array(
         'hide_empty' => true, // Only show categories that have posts
         'orderby' => 'name',  // Order by name
         'order' => 'DESC',     // Descending order
-        'include' => $selected_categories, // Only include selected categories
     ));
 
     ?>
@@ -1996,76 +2132,84 @@ a.page-link.active {
 }
 add_shortcode('pfp_display_filtered_posts', 'pfp_display_filtered_posts');
 
+// New AJAX handler to get available terms based on category
 function pfp_get_available_terms() {
     $category_id = intval($_POST['category_id']);
-    $produce_type_label = get_option('pfp_produce_type_label', 'Produce Type');
+    
+    // Fetch the custom "Produce Type" label from settings
+    $produce_type_label = get_option('pfp_produce_type_label', 'Produce Type'); // Default: 'Produce Type'
 
-    // Get all posts in the selected category
-    $posts_in_category = get_posts(array(
-        'category'    => $category_id,
-        'numberposts' => -1,
-        'fields'      => 'ids',
+    // Fetch terms from your custom taxonomy (replace 'term' with your actual taxonomy name if different)
+    $terms = get_terms(array(
+        'taxonomy'   => 'term',
+        'hide_empty' => false,
     ));
-
-    if (empty($posts_in_category)) {
-        echo '<option value="">No ' . esc_html(strtolower($produce_type_label)) . ' available</option>';
-        wp_die();
-    }
-
-    // Fetch terms associated with posts in this category
-    $terms = wp_get_object_terms($posts_in_category, 'term', array('orderby' => 'name', 'hide_empty' => true));
-
+    
+    // Check if terms were found
     if (!empty($terms)) {
         foreach ($terms as $term) {
+            // Output each term as an option in the dropdown
             echo '<option value="' . esc_attr($term->term_id) . '">' . esc_html($term->name) . '</option>';
         }
     } else {
+        // If no terms found, output a placeholder option
         echo '<option value="">No ' . esc_html(strtolower($produce_type_label)) . ' available</option>';
     }
 
-    wp_die();
+    wp_die(); // Required to terminate immediately and return a proper response
 }
-
 add_action('wp_ajax_pfp_get_available_terms', 'pfp_get_available_terms');
 add_action('wp_ajax_nopriv_pfp_get_available_terms', 'pfp_get_available_terms');
 
 function pfp_get_dynamic_filters() {
     $category_id = intval($_POST['category_id']);
 
-    $custom_tag_label = get_option('pfp_custom_tag_label', 'User State');
-    $tag_label = get_option('pfp_tag_label', 'Month');
+    // Fetch the custom tag label value from settings
+    $custom_tag_label = get_option('pfp_custom_tag_label', 'Custom Tag'); // Default: 'User State'
+     // Fetch the custom tag label value from settings
+     $tag_label = get_option('pfp_tag_label', 'Tag Label'); // Default: 'User State'
 
-    // Get all posts in the selected category
-    $posts_in_category = get_posts(array(
-        'category'    => $category_id,
-        'numberposts' => -1,
-        'fields'      => 'ids',
+
+    // Fetch states associated with the selected category
+    $states = get_terms(array(
+        'taxonomy'   => 'custom_tag',
+        'hide_empty' => true,
+        'object_ids' => get_objects_in_term($category_id, 'category'),
     ));
 
-    if (empty($posts_in_category)) {
-        wp_die(); // No posts in this category, exit early.
-    }
+    // Fetch states associated with the selected category
+    $mystates = get_terms(array(
+        'taxonomy'   => 'custom_tag',
+        'hide_empty' => false,
+    ));
 
-    // Fetch states (custom_tag) associated with posts in this category
-    $states = wp_get_object_terms($posts_in_category, 'custom_tag', array('orderby' => 'name', 'hide_empty' => true));
+    // Fetch tags associated with the selected category
+    $tags = get_tags(array(
+        'hide_empty' => true,
+        'object_ids' => get_objects_in_term($category_id, 'category'),
+    ));
 
-    // Fetch months (post_tag) associated with posts in this category
-    $tags = wp_get_object_terms($posts_in_category, 'post_tag', array('orderby' => 'name', 'hide_empty' => true));
-
-    ob_start();
+    // Fetch tags associated with the selected category
+    $mytags = get_terms(array(
+        'taxonomy' => 'post_tag',
+        'hide_empty' => false,
+        'orderby' => 'term_id',
+    ));
+    
+    ob_start(); // Start output buffering
 
     // Vertical Separator before the custom tag dropdown
     if ($states || $tags) { ?>
         <div class="vertical-separator"></div>
     <?php } ?>
 
-    <!-- Dropdown for User State -->
-    <?php if (!empty($states)) { ?>
+    <!-- Dropdown for Custom Tag Label -->
+    <?php if ($states) { ?>
         <div class="filter-dropdown">
             <label for="user-state"><?php echo esc_html($custom_tag_label); ?></label>
             <select id="user-state">
                 <option value=""><?php echo esc_html__('Select ', 'text-domain') . esc_html($custom_tag_label); ?></option>
-                <?php foreach ($states as $state) { ?>
+                <?php foreach ($mystates as $state) { ?>
                     <option value="<?php echo esc_attr($state->term_id); ?>"><?php echo esc_html($state->name); ?></option>
                 <?php } ?>
             </select>
@@ -2077,23 +2221,25 @@ function pfp_get_dynamic_filters() {
         <div class="vertical-separator"></div>
     <?php } ?>
 
+    
+
     <!-- Dropdown for Month -->
-    <?php if (!empty($tags)) { ?>
+    <?php if ($tags) { ?>
         <div class="filter-dropdown">
             <label for="month"><?php echo esc_html($tag_label); ?></label>
             <select id="month">
-                <option value=""><?php echo esc_html__('Select ', 'text-domain') . esc_html($tag_label); ?></option>
-                <?php foreach ($tags as $tag) { ?>
+            <option value=""><?php echo esc_html__('Select ', 'text-domain') . esc_html($tag_label); ?></option>
+                <?php foreach ($mytags as $tag) { ?>
                     <option value="<?php echo esc_attr($tag->term_id); ?>"><?php echo esc_html($tag->name); ?></option>
                 <?php } ?>
             </select>
         </div>
-    <?php }
+    <?php } ?>
 
-    echo ob_get_clean();
-    wp_die();
+    <?php
+    echo ob_get_clean(); // Return the buffered output
+    wp_die(); // Properly terminate AJAX request
 }
-
 add_action('wp_ajax_pfp_get_dynamic_filters', 'pfp_get_dynamic_filters');
 add_action('wp_ajax_nopriv_pfp_get_dynamic_filters', 'pfp_get_dynamic_filters');
 
@@ -2144,26 +2290,14 @@ function pfp_filter_posts() {
     error_log("Available Term: $available_term");
     error_log("Page: $paged");
 
-    $selected_categories = get_option('pfp_selected_categories', array());
-
-    if (!empty($selected_categories)) {
-        if (!in_array($category_id, $selected_categories)) {
-            echo '<p>No posts found.</p>';
-            wp_die();
-        }
-    }
-
     $filtered_posts_html = pfp_get_filtered_posts($category_id, $user_state, $month, $available_term, $paged);
 
     if (!empty($filtered_posts_html)) {
         echo $filtered_posts_html;
-    } else {
-        echo '<p>No posts found.</p>';
     }
 
     wp_die();
 }
-
 
 
 add_action('wp_ajax_pfp_filter_posts', 'pfp_filter_posts');

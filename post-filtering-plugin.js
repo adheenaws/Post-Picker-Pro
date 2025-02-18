@@ -17,5 +17,24 @@ jQuery(document).ready(function ($) {
         $(target).addClass('active');
     });
 
-    
+    $('#pfp-reset-settings').click(function(e) {
+        e.preventDefault();
+        if (confirm('Are you sure you want to reset all settings to default?')) {
+            $.ajax({
+                url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                type: 'POST',
+                data: {
+                    action: 'pfp_reset_settings'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Settings have been reset to default.');
+                        location.reload(); // Reload the page to reflect the changes
+                    } else {
+                        alert('Failed to reset settings.');
+                    }
+                }
+            });
+        }
+    });
 });
