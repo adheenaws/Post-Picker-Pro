@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Post Picker
-Description: A plugin to filter posts by tags, custom tag, and produce type.Shortcode [pfp_display_filtered_posts].
+Description: A plugin to filter posts by tags, custom tag, and produce type.
 Version: 1.0
 Author: Weamse
 */
@@ -86,7 +86,9 @@ function pfp_render_settings_page() {
                     submit_button('Save Settings');
                     ?>
                 </form>
-                <button id="pfp-reset-settings" class="button button-secondary">Reset Settings</button>
+
+                <!-- Move the Reset Button Outside the Form -->
+                <button id="pfp-reset-settings" class="button button-secondary" style="display: none;">Reset Settings</button>
             </div>
         </div>
     </div>
@@ -100,6 +102,13 @@ function pfp_render_settings_page() {
                 $(this).addClass('nav-tab-active');
                 $('.tab-content').hide();
                 $($(this).attr('href')).show();
+
+                // Show/Hide Reset Button based on the active tab
+                if ($(this).attr('href') === '#tab-general') {
+                    $('#pfp-reset-settings').hide();
+                } else {
+                    $('#pfp-reset-settings').show();
+                }
             });
 
             // Show the first tab by default
@@ -286,6 +295,24 @@ function pfp_render_settings_page() {
 // Register plugin settings
 function pfp_register_settings() {
   
+    
+    
+    // Shortcode Section
+add_settings_section(
+    'pfp_shortcode_section',
+    'Shortcode',
+    'pfp_shortcode_section_text',
+    'pfp-settings-general'
+);
+
+add_settings_field(
+    'pfp_shortcode_display',
+    'Usage Shortcode',
+    'pfp_shortcode_display_input',
+    'pfp-settings-general',
+    'pfp_shortcode_section'
+);
+
     // Register the predefined key setting
     register_setting('pfp_settings_group', 'pfp_predefined_key', 'sanitize_text_field');
 
@@ -305,7 +332,25 @@ function pfp_register_settings() {
         'pfp-settings-general',
         'pfp_predefined_key_section'
     );
+    register_setting('pfp_settings_group', 'pfp_selected_categories', 'pfp_sanitize_categories');
 
+
+    // Add a new section for category selection
+    add_settings_section(
+        'pfp_category_selection_section',
+        'Category Selection',
+        'pfp_category_selection_section_text',
+        'pfp-settings-general'
+    );
+
+    // Add field for category selection
+    add_settings_field(
+        'pfp_selected_categories',
+        'Select Categories to Display',
+        'pfp_selected_categories_input',
+        'pfp-settings-general',
+        'pfp_category_selection_section'
+    );
    
     register_setting('pfp_settings_group', 'pfp_category_title_font_size', 'sanitize_text_field');
     register_setting('pfp_settings_group', 'pfp_tablet_category_title_font_size', 'sanitize_text_field');
@@ -639,6 +684,43 @@ add_settings_field(
 
 add_action('admin_init', 'pfp_register_settings');
 
+function pfp_shortcode_section_text() {
+    echo '<p>Copy and paste this shortcode into any page to display the filtered posts.</p>';
+}
+
+function pfp_shortcode_display_input() {
+    echo '<input type="text" readonly value="[pfp_display_filtered_posts]" style="width: 300px; background-color: #f3f3f3; border: 1px solid #ccc;">';
+}
+
+
+function pfp_category_selection_section_text() {
+    echo '<p>Select the categories you want to display in the Post Picker plugin.</p>';
+}
+
+function pfp_sanitize_categories($input) {
+    if (is_array($input)) {
+        return array_map('intval', $input);
+    }
+    return array(); // Ensure it's always an array
+}
+
+function pfp_selected_categories_input() {
+    $selected_categories = get_option('pfp_selected_categories', array());
+
+    // Ensure the retrieved value is an array
+    if (!is_array($selected_categories)) {
+        $selected_categories = array();
+    }
+
+    $categories = get_categories(array('hide_empty' => false));
+
+    foreach ($categories as $category) {
+        $checked = in_array($category->term_id, $selected_categories) ? 'checked' : '';
+        echo '<label><input type="checkbox" name="pfp_selected_categories[]" value="' . esc_attr($category->term_id) . '" ' . $checked . '> ' . esc_html($category->name) . '</label><br>';
+    }
+}
+
+
 function pfp_border_radius_section_text() {
     echo '<p>Set the border radius for different elements in the Post Picker plugin.</p>';
 }
@@ -691,8 +773,10 @@ function pfp_mobile_image_height_input() {
 
 // Function for the new field
 function pfp_custom_tag_label_input() {
-    $custom_tag_label = get_option('pfp_custom_tag_label', 'Custom Tag'); // Default: 'Custom Tag'
-    echo '<input id="pfp_custom_tag_label" name="pfp_custom_tag_label" type="text" value="' . esc_attr($custom_tag_label) . '" />';
+    $custom_tag_label = get_option('pfp_custom_tag_label', '');
+    $placeholder = 'Eg : Publications'; // Placeholder text
+
+    echo '<input id="pfp_custom_tag_label" name="pfp_custom_tag_label" type="text" value="' . esc_attr($custom_tag_label) . '" placeholder="' . esc_attr($placeholder) . '" />';
 }
 
 
@@ -805,9 +889,12 @@ function pfp_layout_section_text() {
 }
 
 function pfp_produce_type_label_input() {
-    $produce_type_label = get_option('pfp_produce_type_label', 'Produce Type'); // Default: 'Produce Type'
-    echo '<input id="pfp_produce_type_label" name="pfp_produce_type_label" type="text" value="' . esc_attr($produce_type_label) . '" />';
+    $produce_type_label = get_option('pfp_produce_type_label', '');
+    $placeholder = 'Eg : Book Type'; // Placeholder text
+
+    echo '<input id="pfp_produce_type_label" name="pfp_produce_type_label" type="text" value="' . esc_attr($produce_type_label) . '" placeholder="' . esc_attr($placeholder) . '" />';
 }
+
 
 // Section text
 function pfp_section_text() {
@@ -815,11 +902,11 @@ function pfp_section_text() {
 }
 
 
-// Tag label input field
 function pfp_tag_label_input() {
-    $tag_label = get_option('pfp_tag_label', 'Month'); // Default: 'Month'
-    echo '<input id="pfp_tag_label" name="pfp_tag_label" type="text" value="' . esc_attr($tag_label) . '" />';
+    $tag_label = get_option('pfp_tag_label', ''); // Fetch the saved option; default is empty
+    echo '<input id="pfp_tag_label" name="pfp_tag_label" type="text" value="' . esc_attr($tag_label) . '" placeholder="Eg : Author" />';
 }
+
 
 
 
@@ -991,7 +1078,6 @@ function pfp_reset_settings() {
     // Define default values for all settings
     $defaults = array(
         'pfp_predefined_key' => '',
-        'pfp_selected_categories' => array(),
         'pfp_category_title_font_size' => '20',
         'pfp_tablet_category_title_font_size' => '18',
         'pfp_mobile_category_title_font_size' => '16',
@@ -1029,9 +1115,9 @@ function pfp_reset_settings() {
         'pfp_mobile_image_height' => '100',
         'pfp_heading_font_family' => '',
         'pfp_body_font_family' => '',
-        'pfp_tag_label' => 'Month',
-        'pfp_produce_type_label' => 'Produce Type',
-        'pfp_custom_tag_label' => 'Custom Tag',
+        'pfp_tag_label' => '',
+        'pfp_produce_type_label' => '',
+        'pfp_custom_tag_label' => '',
     );
 
     // Reset each setting to its default value
@@ -1351,27 +1437,31 @@ function pfp_display_filtered_posts() {
     
     
 
-    // Fetch the custom taxonomy name from settings
-    $taxonomy_name = get_option('pfp_taxonomy_name', 'custom_tag'); // Default: 'state'
-    $taxonomy_label = ucfirst($taxonomy_name); // Capitalize the label
+  // Fetch the custom taxonomy name from settings
+  $taxonomy_name = get_option('pfp_taxonomy_name', 'custom_tag'); // Default: 'state'
+  $taxonomy_label = ucfirst($taxonomy_name); // Capitalize the label
 
-    // Fetch the custom "Produce Type" label from settings
-    $produce_type_label = get_option('pfp_produce_type_label', 'Produce Type'); // Default: 'Produce Type'
+  // Fetch the custom "Produce Type" label from settings
+  $produce_type_label = get_option('pfp_produce_type_label', 'Produce Type'); // Default: 'Produce Type'
 
-    // Fetch categories that have posts in reverse alphabetical order
-    $categories = get_categories(array(
-        'hide_empty' => true, // Only show categories that have posts
-        'orderby' => 'name',  // Order by name
-        'order' => 'DESC',     // Descending order
-    ));
+  // Fetch selected categories from settings
+  $selected_categories = get_option('pfp_selected_categories', array());
 
-    ?>
-    <<div class="seasonal-recipes">
-    <div class="pp-container" style="background-color: <?php echo esc_attr($pp_container_bg_color); ?>;">
-        <!-- Heading for Selected Category -->
-        <h3 id="selected-category-heading" class="selected-category-heading" style="color: <?php echo esc_attr($selected_category_heading_color); ?>;">
-           
-        </h3>
+  // Fetch categories that have posts in reverse alphabetical order
+  $categories = get_categories(array(
+      'hide_empty' => true, // Only show categories that have posts
+      'orderby' => 'name',  // Order by name
+      'order' => 'DESC',     // Descending order
+      'include' => $selected_categories, // Only include selected categories
+  ));
+
+  ?>
+  <<div class="seasonal-recipes">
+  <div class="pp-container" style="background-color: <?php echo esc_attr($pp_container_bg_color); ?>;">
+      <!-- Heading for Selected Category -->
+      <h3 id="selected-category-heading" class="selected-category-heading" style="color: <?php echo esc_attr($selected_category_heading_color); ?>;">
+         
+      </h3>
 
 
             <style>
@@ -1382,7 +1472,6 @@ function pfp_display_filtered_posts() {
             margin: 0 auto;
             padding: 20px;
             background-color: #fff;
-            border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
@@ -1830,7 +1919,6 @@ function pfp_display_filtered_posts() {
     margin: 0 auto; /* Center the container */
     padding: 20px; /* Add some padding */
     background: #f9f9f9; /* Light background color */
-    border-radius: 10px; /* Rounded corners */
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Soft shadow */
 }
 
@@ -1851,7 +1939,6 @@ h2 {
     cursor: pointer; /* Pointer cursor for interactivity */
     padding: 10px 15px; /* Space inside each tab */
     border: 1px solid transparent; /* Border for inactive tabs */
-    border-radius: 5px; /* Rounded corners */
    
 }
 
@@ -1880,7 +1967,6 @@ h2 {
     width: 100%; /* Full width for dropdown */
     /* padding: 10px; Space inside dropdown */
     border: 1px solid #ccc; /* Light border */
-    border-radius: 5px; /* Rounded corners */
     font-size: 16px; /* Font size */
     color: #333; /* Dark text color */
     background-color: #fff; /* White background */
@@ -1899,7 +1985,6 @@ h2 {
 .post-item {
     border: 1px solid #ddd;
     padding: 15px;
-    border-radius: 5px;
     width: calc(33.333% - 20px); /* Adjust for 3 columns */
 }
 .post-item h3 {
@@ -1912,7 +1997,6 @@ h2 {
     padding: 30px;
     box-shadow: 0px 4px 30px 0px #0000000F;
     border: 1px solid #10647F1F;
-    border-radius: 12px;
 
 }
 .filter-dropdown select{
@@ -1997,7 +2081,6 @@ width:100%;
 height: 100%; /* Make sure the items take full height */
 padding: 20px;
 gap: 15px;
-border-radius: 12px 12px 12px 12px;
 opacity: 0px;
 box-shadow: 0px 4px 20px 0px #0000000F;
 border: 0px;
@@ -2035,7 +2118,6 @@ select#available-posts{
     text-decoration: none;
     padding: 5px 10px;
     border: 1px solid #ddd;
-    border-radius: 5px;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -2071,7 +2153,6 @@ a.page-link.active {
     }
     .post-grid {
     display: grid;
-    /* grid-template-columns: repeat(2, 1fr); /* 4 columns */
     gap: 10px; /* Space between posts */
     padding:20px;
 }
@@ -2290,10 +2371,21 @@ function pfp_filter_posts() {
     error_log("Available Term: $available_term");
     error_log("Page: $paged");
 
+    $selected_categories = get_option('pfp_selected_categories', array());
+
+    if (!empty($selected_categories)) {
+        if (!in_array($category_id, $selected_categories)) {
+            echo '<p>No posts found.</p>';
+            wp_die();
+        }
+    }
+
     $filtered_posts_html = pfp_get_filtered_posts($category_id, $user_state, $month, $available_term, $paged);
 
     if (!empty($filtered_posts_html)) {
         echo $filtered_posts_html;
+    } else {
+        echo '<p>No posts found.</p>';
     }
 
     wp_die();
@@ -2374,10 +2466,10 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
         while ($query->have_posts()) {
             $query->the_post();
             ?>
-            <a href="<?php the_permalink(); ?>" class="post-link">
+            <a href="<?php the_permalink(); ?>" class="post-link" style="text-decoration: none;">
                 <div class="posts-section">
                     <div class="post-item">
-                        <?php the_post_thumbnail('medium', ['style' => 'border-radius: 8px;']); ?>
+                        <?php the_post_thumbnail('medium'); ?>
                         <h3 style="text-align: center; font-weight: 700; color: <?php echo esc_attr($post_item_heading_color); ?>;">
         <?php the_title(); ?>
         </h3>
