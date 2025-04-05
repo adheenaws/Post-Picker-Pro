@@ -21,7 +21,7 @@ jQuery(document).ready(function ($) {
         e.preventDefault();
         if (confirm('Are you sure you want to reset all settings to default?')) {
             $.ajax({
-                url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                url: pfp_ajax.ajax_url, // Use localized script
                 type: 'POST',
                 data: {
                     action: 'pfp_reset_settings'
@@ -37,4 +37,6 @@ jQuery(document).ready(function ($) {
             });
         }
     });
+
+    
 });

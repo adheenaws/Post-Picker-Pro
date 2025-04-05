@@ -142,8 +142,7 @@ padding:40px;
     padding: 30px;
     box-shadow: 0px 4px 30px 0px #0000000F;
     border: 1px solid #10647F1F;
-    border-radius: 12px;
-
+   
 }
 
 
@@ -214,7 +213,6 @@ select#available-posts,select#user-state ,select#month {
 height: 100%; /* Make sure the items take full height */
 padding: 10px;
 gap: 15px;
-border-radius: 12px 12px 12px 12px;
 opacity: 0px;
 box-shadow: 0px 4px 20px 0px #0000000F;
 border: 0px;
@@ -277,7 +275,6 @@ select#available-posts{
             margin-right: 15px;
             cursor: pointer;
             padding: 10px 15px;
-            border-radius: 5px;
         }
         .tab-item.active {
             border: 0px;

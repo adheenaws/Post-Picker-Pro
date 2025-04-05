@@ -10,6 +10,442 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
+
+
+/**
+ * Check license against WHMCS
+ * 
+ * @param string $license_key License key to validate
+ * @param string $local_key Local key for caching (optional)
+ * @return array|bool License data if valid, false if invalid
+ */
+function pfp_check_license($license_key, $local_key = '') {
+    if (!pfp_validate_license_format($license_key)) {
+        error_log("[Post Picker] License validation failed: Invalid license key format");
+        return array('status' => 'error', 'message' => 'Invalid license key format');
+    }
+
+    $whmcs_url = 'https://whmcsdev.weamse.dev/';
+    $licensing_secret_key = 'test1234'; 
+    $whmcs_username = 'wsteam';
+    $whmcs_password = 'ws@20#hc24';
+    $local_key = !empty($local_key) ? $local_key : get_option('pfp_local_key', '');
+
+    error_log("[Post Picker] Sending license check request for key: " . substr($license_key, 0, 6) . "...");
+    error_log("[Post Picker] Using local key: " . (!empty($local_key) ? "Yes" : "No"));
+
+    try {
+        $args = [
+            'body' => [
+                'licensekey' => $license_key,
+                'domain' => $_SERVER['SERVER_NAME'],
+                'ip' => $_SERVER['SERVER_ADDR'] ?? $_SERVER['LOCAL_ADDR'],
+                'dir' => dirname(__FILE__),
+                'check_token' => time() . md5(mt_rand(1000000000, 9999999999) . $license_key),
+                'version' => '1.0',
+                'localkey' => $local_key ?: '',
+                'secret' => $licensing_secret_key
+            ],
+            'headers' => [
+                'Authorization' => 'Basic ' . base64_encode($whmcs_username . ':' . $whmcs_password),
+                'Accept' => 'application/xml'
+            ],
+            'timeout' => 30,
+            'sslverify' => false // Temporarily disable for testing
+        ];
+
+        error_log("License check request: " . print_r($args, true));
+
+        $response = wp_remote_post($whmcs_url . 'modules/servers/licensing/verify.php', $args);
+
+        if (is_wp_error($response)) {
+            $error_message = $response->get_error_message();
+            error_log("[Post Picker] WHMCS connection error: " . $error_message);
+            return array('status' => 'error', 'message' => $error_message);
+        }
+
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code == 401) {
+            return array(
+                'status' => 'error',
+                'message' => 'Authentication failed - please check your WHMCS credentials'
+            );
+        }
+        
+        $response_body = wp_remote_retrieve_body($response);
+        
+        error_log("[Post Picker] Response code: " . $response_code);
+        error_log("[Post Picker] Raw response body: " . $response_body);
+
+        // Parse the XML response
+        try {
+            // Fix malformed XML by adding a root element if needed
+            $xml_body = $response_body;
+            if (strpos($xml_body, '<?xml') === false) {
+                $xml_body = '<?xml version="1.0"?><root>' . $xml_body . '</root>';
+            }
+            
+            // Suppress XML warnings for malformed content
+            libxml_use_internal_errors(true);
+            $xml = simplexml_load_string($xml_body);
+            
+            if ($xml === false) {
+                $errors = libxml_get_errors();
+                foreach ($errors as $error) {
+                    error_log("[Post Picker] XML Error: " . $error->message);
+                }
+                libxml_clear_errors();
+                throw new Exception("Failed to parse XML response");
+            }
+            
+            // Convert XML to array for easier handling
+            $data = json_decode(json_encode($xml), true);
+            
+            // If we added a root element, get the first child
+            if (isset($data['status']) && count($data) === 1) {
+                $data = current($data);
+            }
+            
+            error_log("[Post Picker] Parsed response data: " . print_r($data, true));
+
+            // Handle response based on status
+            if (isset($data['status'])) {
+                if ($data['status'] === "Active") {
+                    // If there's a local key, save it
+                    if (!empty($data['localkey'])) {
+                        update_option('pfp_local_key', $data['localkey']);
+                    }
+                    return array('status' => 'success', 'data' => $data);
+                } elseif ($data['status'] === "Invalid") {
+                    $message = isset($data['message']) ? $data['message'] : 'License is invalid';
+                    return array('status' => 'error', 'message' => $message);
+                }
+            }
+            
+            return array('status' => 'error', 'message' => 'Unknown response format');
+
+        } catch (Exception $xml_error) {
+            error_log("[Post Picker] XML parsing error: " . $xml_error->getMessage());
+            return array('status' => 'error', 'message' => 'Invalid server response format');
+        }
+
+    } catch (Exception $e) {
+        error_log("[Post Picker] License check exception: " . $e->getMessage());
+        return array('status' => 'error', 'message' => $e->getMessage());
+    }
+}
+
+
+// Add license settings section
+function pfp_add_license_settings_section() {
+    register_setting('pfp_settings_group', 'pfp_license_key', [
+        'sanitize_callback' => 'sanitize_text_field',
+    ]);
+    
+    add_settings_section(
+        'pfp_license_section',
+        'License Settings',
+        'pfp_license_section_text',
+        'pfp-settings-general'
+    );
+
+    add_settings_field(
+        'pfp_license_key',
+        'License Key',
+        'pfp_license_key_input',
+        'pfp-settings-general',
+        'pfp_license_section'
+    );
+}
+add_action('admin_init', 'pfp_add_license_settings_section');
+
+function pfp_license_section_text() {
+    echo '<p>Enter your license key to unlock premium features.</p>';
+}
+
+function pfp_license_key_input() {
+    $license_key = get_option('pfp_license_key', '');
+    $is_valid = pfp_is_licensed();
+
+    error_log("License Key: " . $license_key);
+    error_log("License Valid: " . ($is_valid ? 'Yes' : 'No'));
+
+    echo '<input type="text" id="pfp_license_key" name="pfp_license_key" value="' . esc_attr($license_key) . '" class="regular-text" />';
+
+    if (!empty($license_key)) {
+        if ($is_valid) {
+            echo '<p style="color: green;">✓ License is valid and active</p>';
+        } else {
+            echo '<p style="color: red;">✗ License is invalid or expired</p>';
+        }
+    } else {
+        echo '<p style="color: orange;">⚠ No license key entered</p>';
+    }
+}
+
+function pfp_admin_license_notice() {
+    if (current_user_can('manage_options') && !pfp_is_licensed()) {
+        $settings_url = admin_url('admin.php?page=pfp-settings');
+        echo '<div class="notice notice-warning is-dismissible"><p>';
+        echo '<strong>Post Picker:</strong> Premium features like Font Sizes and Colors customization require a valid license. ';
+        echo '<a href="' . esc_url($settings_url) . '">Enter your license key</a> to unlock all features.';
+        echo '</p></div>';
+    }
+}
+add_action('admin_notices', 'pfp_admin_license_notice');
+
+
+// Set default values when the plugin is activated
+function pfp_activate_plugin() {
+    // Define default values for all settings
+    $defaults = array(
+        'pfp_predefined_key' => '',
+        'pfp_category_title_font_size' => '20',
+        'pfp_tablet_category_title_font_size' => '18',
+        'pfp_mobile_category_title_font_size' => '16',
+        'pfp_tab_font_size' => '14',
+        'pfp_tablet_tab_font_size' => '12',
+        'pfp_mobile_tab_font_size' => '10',
+        'pfp_post_title_font_size' => '24',
+        'pfp_tablet_post_title_font_size' => '20',
+        'pfp_mobile_post_title_font_size' => '18',
+        'pfp_post_excerpt_font_size' => '14',
+        'pfp_tablet_post_excerpt_font_size' => '12',
+        'pfp_mobile_post_excerpt_font_size' => '10',
+        'pfp_pp_container_border_radius' => '0',
+        'pfp_filter_container_border_radius' => '0',
+        'pfp_post_item_border_radius' => '0',
+        'pfp_post_item_img_border_radius' => '0',
+        'pfp_pp_container_bg_color' => '#FFFFFF',
+        'pfp_filter_container_bg_color' => '#FFFFFF',
+        'pfp_post_item_bg_color' => '#FFFFFF',
+        'pfp_pagination_bg_color' => '#FFFFFF',
+        'pfp_pagination_active_bg_color' => '#000000',
+        'pfp_selected_category_heading_color' => '#000000',
+        'pfp_tab_item_color' => '#000000',
+        'pfp_post_item_heading_color' => '#000000',
+        'pfp_post_item_text_color' => '#000000',
+        'pfp_subheading_font_color' => '#000000',
+        'pfp_pagination_font_color' => '#000000',
+        'pfp_pagination_active_font_color' => '#FFFFFF',
+        'pfp_posts_per_row' => '4',
+        'pfp_tablet_posts_per_row' => '2',
+        'pfp_mobile_posts_per_row' => '1',
+        'pfp_posts_per_page' => '16',
+        'pfp_desktop_image_height' => '200',
+        'pfp_tablet_image_height' => '150',
+        'pfp_mobile_image_height' => '100',
+        'pfp_heading_font_family' => '',
+        'pfp_body_font_family' => '',
+        'pfp_tag_label' => '',
+        'pfp_produce_type_label' => '',
+        'pfp_custom_tag_label' => '',
+    );
+
+    // Set each option if it doesn't already exist
+    foreach ($defaults as $key => $value) {
+        if (get_option($key) === false) {
+            update_option($key, $value);
+        }
+    }
+}
+register_activation_hook(__FILE__, 'pfp_activate_plugin');
+
+
+/**
+ * Validate license when settings are saved
+ */
+function pfp_validate_license_on_save() {
+    if (isset($_POST['pfp_license_key'])) {
+        $license_key = sanitize_text_field(trim($_POST['pfp_license_key']));
+        $current_license = get_option('pfp_license_key', '');
+
+        // Only validate if the key has changed or is empty
+        if ($license_key !== $current_license || empty($current_license)) {
+            error_log("[Post Picker] Validating license key: " . $license_key);
+
+            // Clear any cached validation
+            delete_transient('pfp_license_valid');
+            delete_transient('pfp_license_last_check');
+
+            // First validate the format
+            if (!pfp_validate_license_format($license_key)) {
+                add_settings_error(
+                    'pfp_license_key',
+                    'invalid_format',
+                    '✗ Invalid license key format',
+                    'error'
+                );
+                update_option('pfp_license_key', '');
+                return;
+            }
+
+            $local_key = get_option('pfp_local_key', '');
+            $result = pfp_check_license($license_key, $local_key);
+
+            if ($result['status'] === 'success') {
+                update_option('pfp_license_key', $license_key);
+                add_settings_error(
+                    'pfp_license_key',
+                    'valid_license',
+                    '✓ License is valid and active',
+                    'updated'
+                );
+            } else {
+                add_settings_error(
+                    'pfp_license_key',
+                    'invalid_license',
+                    '✗ License error: ' . $result['message'],
+                    'error'
+                );
+                update_option('pfp_license_key', '');
+                update_option('pfp_local_key', '');
+            }
+        }
+    }
+
+    // Additional logic to reset premium fields if license is not valid
+    $is_licensed = pfp_is_licensed();
+
+    // if (!$is_licensed) {
+    //     // Get all premium options
+    //     $premium_options = array(
+    //         // Font sizes
+    //         'pfp_category_title_font_size',
+    //         'pfp_tablet_category_title_font_size',
+    //         'pfp_mobile_category_title_font_size',
+    //         'pfp_tab_font_size',
+    //         'pfp_tablet_tab_font_size',
+    //         'pfp_mobile_tab_font_size',
+    //         'pfp_post_title_font_size',
+    //         'pfp_tablet_post_title_font_size',
+    //         'pfp_mobile_post_title_font_size',
+    //         'pfp_post_excerpt_font_size',
+    //         'pfp_tablet_post_excerpt_font_size',
+    //         'pfp_mobile_post_excerpt_font_size',
+    //         // Colors
+    //         'pfp_pp_container_bg_color',
+    //         'pfp_filter_container_bg_color',
+    //         'pfp_post_item_bg_color',
+    //         'pfp_pagination_bg_color',
+    //         'pfp_pagination_active_bg_color',
+    //         'pfp_selected_category_heading_color',
+    //         'pfp_tab_item_color',
+    //         'pfp_post_item_heading_color',
+    //         'pfp_post_item_text_color',
+    //         'pfp_subheading_font_color',
+    //         'pfp_pagination_font_color',
+    //         'pfp_pagination_active_font_color'
+    //     );
+
+    //     // Reset any premium options that might have been submitted
+    //     foreach ($premium_options as $option) {
+    //         if (isset($_POST[$option])) {
+    //             unset($_POST[$option]);
+    //         }
+    //     }
+    // }
+}
+add_action('admin_init', 'pfp_validate_license_on_save', 5);
+
+
+
+
+function pfp_is_licensed() {
+    $license_key = get_option('pfp_license_key', '');
+    
+    if (empty($license_key)) {
+        error_log("[Post Picker] License check: No license key set");
+        return false;
+    }
+
+    // Always do a fresh check in admin area
+    if (is_admin()) {
+        delete_transient('pfp_license_valid');
+        delete_transient('pfp_license_last_check');
+    }
+
+    // Check if we have a cached valid result
+    $is_valid = get_transient('pfp_license_valid');
+    
+    if (false === $is_valid) {
+        $local_key = get_option('pfp_local_key', '');
+        $result = pfp_check_license($license_key, $local_key);
+        
+        // Check license validity based on XML response format
+        $is_valid = false;
+        
+        if (isset($result['status']) && $result['status'] === 'success') {
+            // Success from the pfp_check_license wrapper
+            $is_valid = true;
+            
+            // Additional validation against domain, IP, and directory if needed
+            if (isset($result['data']['validdomain'])) {
+                $current_domain = $_SERVER['SERVER_NAME'];
+                $valid_domains = array_map('trim', explode(',', $result['data']['validdomain']));
+                if (!in_array($current_domain, $valid_domains)) {
+                    error_log("[Post Picker] License valid but domain mismatch");
+                    $is_valid = false;
+                }
+            }
+            
+            if (isset($result['data']['validip'])) {
+                $current_ip = $_SERVER['SERVER_ADDR'] ?? $_SERVER['LOCAL_ADDR'];
+                if ($current_ip !== $result['data']['validip']) {
+                    error_log("[Post Picker] License valid but IP mismatch");
+                    $is_valid = false;
+                }
+            }
+            
+            if (isset($result['data']['validdirectory'])) {
+                $current_dir = dirname(__FILE__);
+                if ($current_dir !== $result['data']['validdirectory']) {
+                    error_log("[Post Picker] License valid but directory mismatch");
+                    $is_valid = false;
+                }
+            }
+        }
+        elseif (isset($result['data']['status']) && $result['data']['status'] === 'Active') {
+            // Direct Active status from XML
+            $is_valid = true;
+        }
+        
+        // Cache results for 12 hours if valid, 1 hour if invalid
+        $cache_time = $is_valid ? 12 * HOUR_IN_SECONDS : 1 * HOUR_IN_SECONDS;
+        set_transient('pfp_license_valid', $is_valid, $cache_time);
+        set_transient('pfp_license_last_check', time(), $cache_time);
+        
+        if (!$is_valid) {
+            error_log("[Post Picker] License validation failed - clearing local key");
+            update_option('pfp_local_key', '');
+            
+            // Log specific error if available
+            if (isset($result['message'])) {
+                error_log("[Post Picker] License error: " . $result['message']);
+            }
+        }
+    }
+    
+    return $is_valid;
+}
+
+
+function pfp_validate_license_format($license_key) {
+    if (empty($license_key)) {
+        error_log("Empty license key");
+        return false;
+    }
+    
+    // Basic validation - allow for different license key formats
+    // WHMCS keys are typically 32 chars but can vary
+    if (!preg_match('/^[a-zA-Z0-9-]{10,64}$/', $license_key)) {
+        error_log("Invalid license key format: " . $license_key);
+        return false;
+    }
+    
+    return true;
+}
+
 // Enqueue necessary scripts and styles
 function pfp_enqueue_scripts() {
     wp_enqueue_style('pfp-styles', plugin_dir_url(__FILE__) . '/post-filtering-plugin.css');
@@ -31,26 +467,20 @@ function pfp_add_settings_pages() {
         100                     // Position
     );
 
-    // License Settings Page (added under Settings menu)
-    add_options_page(
-        'My Plugin License Settings',  // Page title
-        'My Plugin Settings',          // Menu title
-        'manage_options',              // Capability required to access the page
-        'my-plugin-license',           // Slug for the page
-        'my_plugin_license_settings_page' // Callback function that displays the page content
-    );
 }
 add_action('admin_menu', 'pfp_add_settings_pages');
 
 
 // Render the settings page with tabs
 function pfp_render_settings_page() {
+    $is_licensed = pfp_is_licensed();
     ?>
-        <div class="wrap">
+     <div class="wrap">
         <h1>Post Picker Settings</h1>
 
+        <?php settings_errors(); ?>
+
         <div class="pfp-settings-container">
-            <!-- Left Side: Settings Form -->
             <div class="pfp-settings-form">
                 <h2 class="nav-tab-wrapper">
                     <a href="#tab-general" class="nav-tab nav-tab-active">General Settings</a>
@@ -61,26 +491,26 @@ function pfp_render_settings_page() {
 
                 <form method="post" action="options.php" id="pfp-settings-form">
                     <?php
-                    settings_fields('pfp_settings_group'); // Settings group
+                    settings_fields('pfp_settings_group');
 
-                    // General Settings Tab
+                    // General Settings Tab (always visible)
                     echo '<div id="tab-general" class="tab-content active">';
-                    do_settings_sections('pfp-settings-general'); // General settings section
+                    do_settings_sections('pfp-settings-general');
                     echo '</div>';
 
-                    // Font Sizes Tab
+                    // Font Sizes Tab (always visible)
                     echo '<div id="tab-font-sizes" class="tab-content">';
-                    do_settings_sections('pfp-settings-font-sizes'); // Font sizes section
+                    do_settings_sections('pfp-settings-font-sizes');
                     echo '</div>';
 
-                    // Colors Tab
+                    // Colors Tab (always visible)
                     echo '<div id="tab-colors" class="tab-content">';
-                    do_settings_sections('pfp-settings-colors'); // Colors section
+                    do_settings_sections('pfp-settings-colors');
                     echo '</div>';
 
-                    // Layout Tab
+                    // Layout Tab (always visible)
                     echo '<div id="tab-layout" class="tab-content">';
-                    do_settings_sections('pfp-settings-layout'); // Layout section
+                    do_settings_sections('pfp-settings-layout');
                     echo '</div>';
 
                     submit_button('Save Settings');
@@ -93,10 +523,237 @@ function pfp_render_settings_page() {
         </div>
     </div>
 
-    <!-- Tab Switching JavaScript -->
+      <!-- Premium Feature Popup -->
+      <div id="pfp-premium-popup" style="display:none;">
+    <div class="pfp-popup-content">
+        <span class="pfp-popup-close">&times;</span>
+        <h3>Premium Feature</h3>
+        <p>This feature requires a valid license. Please enter your license key to unlock all premium features.</p>
+        <a href="<?php echo admin_url('admin.php?page=pfp-settings'); ?>" class="button button-primary">Enter License Key</a>
+        <!-- <div class="pfp-bonus">
+            <strong>Bonus:</strong> Get 50% off your license for a limited time!
+        </div> -->
+        <!-- <a href="#" class="pfp-already-purchased">Already purchased?</a> -->
+    </div>
+</div>
+
+<script>
+        jQuery(document).ready(function($) {
+            // Check license status
+            var isLicensed = <?php echo $is_licensed ? 'true' : 'false'; ?>;
+
+            // Show premium notice but don't block interaction
+         // Add premium indicator to fields
+            if (!isLicensed) {
+                // $('#tab-font-sizes .form-table tr, #tab-colors .form-table tr').each(function() {
+                //     $(this).addClass('pfp-premium-field');
+                // });
+            }
+
+            // Initialize color pickers regardless of license status
+            $('.pfp-color-picker').wpColorPicker();
+        });
+        </script>
+    <style>
+
+/* .premium-badge {
+                background: #ffba00;
+                color: #000;
+                padding: 2px 5px;
+                font-size: 10px;
+                font-weight: bold;
+                border-radius: 3px;
+                margin-left: 10px;
+            }
+             */
+            .pfp-premium-field {
+                opacity: 1; /* Always show fields */
+                pointer-events: auto; /* Allow interaction */
+            }
+      #pfp-premium-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5); /* Darker overlay */
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.pfp-popup-content {
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+
+.pfp-popup-content h3 {
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.pfp-popup-content p {
+    color: #555;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.pfp-popup-content .button-primary {
+    background-color: #f47c40; /* Orange button */
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 10px;
+    transition: background 0.3s ease-in-out;
+}
+
+.pfp-popup-content .button-primary:hover {
+    background-color: #d66935;
+}
+
+.pfp-popup-content .pfp-bonus {
+    background: #fdf8e3;
+    padding: 12px;
+    margin-top: 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #555;
+    font-weight: 500;
+}
+
+.pfp-popup-content .pfp-bonus strong {
+    color: #28a745; /* Green text */
+}
+
+.pfp-popup-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 18px;
+    cursor: pointer;
+    color: #999;
+}
+
+.pfp-popup-close:hover {
+    color: #666;
+}
+
+.pfp-already-purchased {
+    display: block;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #666;
+    text-decoration: none;
+}
+
+.pfp-already-purchased:hover {
+    color: #333;
+}
+
+    </style>
+      <script>
+jQuery(document).ready(function($) {
+    // Check license status
+    var isLicensed = <?php echo $is_licensed ? 'true' : 'false'; ?>;
+
+    // Show premium popup function
+    function showPremiumPopup() {
+        $('#pfp-premium-popup').fadeIn();
+       // return false;
+    }
+
+    // Show premium popup when interacting with premium tabs
+    $('.nav-tab-wrapper a').click(function(e) {
+    // Always allow tab switching
+    var tab = $(this).attr('href');
+    $('.nav-tab-wrapper a').removeClass('nav-tab-active');
+    $(this).addClass('nav-tab-active');
+    $('.tab-content').hide();
+    $(tab).show();
+});
+
+    // Show popup when interacting with any premium field
+    $('input[name="pfp_category_title_font_size"], \
+       input[name="pfp_tablet_category_title_font_size"], \
+       input[name="pfp_mobile_category_title_font_size"], \
+       input[name="pfp_tab_font_size"], \
+       input[name="pfp_tablet_tab_font_size"], \
+       input[name="pfp_mobile_tab_font_size"], \
+       input[name="pfp_post_title_font_size"], \
+       input[name="pfp_tablet_post_title_font_size"], \
+       input[name="pfp_mobile_post_title_font_size"], \
+       input[name="pfp_post_excerpt_font_size"], \
+       input[name="pfp_tablet_post_excerpt_font_size"], \
+       input[name="pfp_mobile_post_excerpt_font_size"]').on('focus click', function(e) {
+        if (!isLicensed) {
+            e.preventDefault();
+            return showPremiumPopup();
+        }
+    });
+
+    // Close popup
+    $('.pfp-popup-close').click(function() {
+        $('#pfp-premium-popup').fadeOut();
+    });
+
+    // Add premium indicator to fields
+    if (!isLicensed) {
+        $('#tab-font-sizes .form-table tr, #tab-colors .form-table tr').each(function() {
+            $(this).addClass('pfp-premium-field');
+        });
+    }
+
+    // Handle color picker interactions
+    if (!isLicensed) {
+        // Remove existing color picker bindings
+        $('.wp-color-result').off('click');
+        
+        // Prevent color picker from opening
+        $('.wp-color-result').on('click', function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return showPremiumPopup();
+        });
+        
+        // Also prevent direct input interaction
+        $('.pfp-color-picker').on('focus click', function(e) {
+            e.preventDefault();
+            return showPremiumPopup();
+        });
+        
+        // Make it visually clear the field is disabled
+        $('.wp-color-result').css({
+            'cursor': 'default',
+            'opacity': '0.7'
+        });
+    } else {
+        // Initialize color pickers for licensed users
+        $('.pfp-color-picker').wpColorPicker();
+    }
+});
+    </script>
+
+
     <script type="text/javascript">
         jQuery(document).ready(function($) {
             $('.nav-tab-wrapper a').click(function(e) {
+                if ($(this).hasClass('disabled-tab')) {
+                    e.preventDefault();
+                    alert('Please enter a valid license key to access these settings.');
+                    return false;
+                }
+                
                 e.preventDefault();
                 $('.nav-tab-wrapper a').removeClass('nav-tab-active');
                 $(this).addClass('nav-tab-active');
@@ -285,6 +942,34 @@ function pfp_render_settings_page() {
             margin-bottom: 10px;
         }
     }
+    .pfp-premium-field {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* .pfp-premium-field::after {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-left: 8px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffba00"><path d="M12 2C9.243 2 7 4.243 7 7v3H6a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V11a1 1 0 0 0-1-1h-1V7c0-2.757-2.243-5-5-5zm0 2c1.654 0 3 1.346 3 3v3H9V7c0-1.654 1.346-3 3-3zm-6 8h12v8H6v-8z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+} */
+
+.disabled-tab {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.pfp-premium-field input,
+.pfp-premium-field select {
+    background-color: #f5f5f5;
+    border-color: #ddd;
+}
 </style>
 
     <?php
@@ -307,32 +992,13 @@ add_settings_section(
 
 add_settings_field(
     'pfp_shortcode_display',
-    'Usage Shortcode',
+    'Shortcode',
     'pfp_shortcode_display_input',
     'pfp-settings-general',
     'pfp_shortcode_section'
 );
 
-    // Register the predefined key setting
-    register_setting('pfp_settings_group', 'pfp_predefined_key', 'sanitize_text_field');
-
-    // Add a new section for the predefined key
-    add_settings_section(
-        'pfp_predefined_key_section',
-        'License Key',
-        'pfp_predefined_key_section_text',
-        'pfp-settings-general'
-    );
-
-    // Add the predefined key input field
-    add_settings_field(
-        'pfp_predefined_key',
-        'License Key',
-        'pfp_predefined_key_input',
-        'pfp-settings-general',
-        'pfp_predefined_key_section'
-    );
-    register_setting('pfp_settings_group', 'pfp_selected_categories', 'pfp_sanitize_categories');
+  
 
 
     // Add a new section for category selection
@@ -769,8 +1435,6 @@ function pfp_mobile_image_height_input() {
     echo '<input id="pfp_mobile_image_height" name="pfp_mobile_image_height" type="number" min="50" max="1000" value="' . esc_attr($mobile_image_height) . '" />';
 }
 
-
-
 // Function for the new field
 function pfp_custom_tag_label_input() {
     $custom_tag_label = get_option('pfp_custom_tag_label', '');
@@ -779,13 +1443,6 @@ function pfp_custom_tag_label_input() {
     echo '<input id="pfp_custom_tag_label" name="pfp_custom_tag_label" type="text" value="' . esc_attr($custom_tag_label) . '" placeholder="' . esc_attr($placeholder) . '" />';
 }
 
-
-
-
-// Callback function for the predefined key section text
-function pfp_predefined_key_section_text() {
-    echo '<p>Enter the license key.</p>';
-}
 
 // Callback function for the predefined key input field
 function pfp_predefined_key_input() {
@@ -797,7 +1454,7 @@ function pfp_category_title_font_section_text() {
     echo '<p>Set the font size for the selected category title across different screen sizes.</p>';
 }
 function pfp_category_title_font_size_input() {
-    $value = get_option('pfp_category_title_font_size', '');
+    $value = get_option('pfp_category_title_font_size', '20');
     echo '<input type="text" name="pfp_category_title_font_size" value="' . esc_attr($value) . '" />';
 }
 
@@ -810,8 +1467,6 @@ function pfp_mobile_category_title_font_size_input() {
     $value = get_option('pfp_mobile_category_title_font_size', '');
     echo '<input type="text" name="pfp_mobile_category_title_font_size" value="' . esc_attr($value) . '" />';
 }
-
-
 
 function pfp_post_row_section_text() {
     echo '<p>Configure the number of posts displayed per row for different devices (desktop, tablet, mobile).</p>';
@@ -1394,18 +2049,15 @@ add_action('save_post', 'save_terms_meta_box');
 
 
 function pfp_display_filtered_posts() {
+
+    // if (!pfp_is_licensed()) {
+    //     return '<div class="pfp-license-notice">Premium features require a valid license. Please enter your license key in the plugin settings.</div>';
+    // }
+
+
     ob_start(); // Start output buffering
 
-    // Fetch the predefined key from settings
-    $predefined_key = get_option('pfp_predefined_key', '');
 
-    // Check if the predefined key matches
-    if ($predefined_key === 'YOUR_PREDEFINED_KEY') {
-        // Display custom fields only if the key matches
-        echo '<div class="custom-fields">';
-        echo '<p>Custom fields go here.</p>';
-        echo '</div>';
-    } 
 
     // Fetch custom background colors from settings
     $pp_container_bg_color = get_option('pfp_pp_container_bg_color', '#FFFFFF');
@@ -2324,8 +2976,6 @@ function pfp_get_dynamic_filters() {
 add_action('wp_ajax_pfp_get_dynamic_filters', 'pfp_get_dynamic_filters');
 add_action('wp_ajax_nopriv_pfp_get_dynamic_filters', 'pfp_get_dynamic_filters');
 
-
-
 add_action('wp_ajax_pfp_get_available_posts', 'pfp_get_available_posts');
 add_action('wp_ajax_nopriv_pfp_get_available_posts', 'pfp_get_available_posts');
 
@@ -2390,7 +3040,6 @@ function pfp_filter_posts() {
 
     wp_die();
 }
-
 
 add_action('wp_ajax_pfp_filter_posts', 'pfp_filter_posts');
 add_action('wp_ajax_nopriv_pfp_filter_posts', 'pfp_filter_posts');
@@ -2543,15 +3192,11 @@ function pfp_get_filtered_posts($category_id = '', $user_state = '', $month = ''
     return ob_get_clean(); // Return the buffered output
 }
 
-
 // AJAX action hooks
 add_action('wp_ajax_pfp_filter_posts', 'pfp_filter_posts');
 add_action('wp_ajax_nopriv_pfp_filter_posts', 'pfp_filter_posts');
 add_action('wp_ajax_pfp_get_available_posts', 'pfp_get_available_posts');
 add_action('wp_ajax_nopriv_pfp_get_available_posts', 'pfp_get_available_posts');
-
-
-
 
 // Enqueue necessary scripts and styles for tabs
 function pfp_enqueue_tab_scripts() {
